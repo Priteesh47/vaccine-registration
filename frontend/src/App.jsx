@@ -8,13 +8,11 @@ import Register from "./pages/Register";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserDashboard from "./pages/UserDashboard";
 import StaffDashboard from "./pages/StaffDashboard";
-import CreateAppointment from "./pages/CreateAppointment";
-import MyAppointments from "./pages/MyAppointments";
-import MyProfile from "./pages/MyProfile";
-import Vaccines from "./pages/Vaccines";
 import Center from "./pages/Center";
-import Contact from "./pages/Contact";
+import VaccinesPage from "./pages/VaccinesPage";
+import UserProfile from "./pages/UserProfile";
 import About from "./pages/About";
+import Contact from "./pages/Contact";
 
 function App() {
   return (
@@ -24,16 +22,15 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/user-dashboard" element={<UserDashboard />} />
         <Route path="/staff-dashboard" element={<StaffDashboard />} />
-        <Route path="/create-appointment" element={<CreateAppointment />} />
-        <Route path="/my-appointments" element={<MyAppointments />} />
-        <Route path="/my-profile" element={<MyProfile />} />
-        <Route path="/vaccines" element={<Vaccines />} />
-        <Route path="/center" element={<Center />} />
-        <Route path="/contact" element={<Contact />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/center/:id" element={<Center />} />
+        <Route path="/vaccines" element={<VaccinesPage />} />
+        <Route path="/profile" element={<UserProfile />} />
         <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="*" element={<div>Page Not Found</div>} />
       </Routes>
       <ToastContainer position="bottom-right" />
     </div>

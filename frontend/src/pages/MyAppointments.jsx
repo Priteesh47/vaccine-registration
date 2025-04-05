@@ -1,80 +1,133 @@
-import React, { useContext, useState } from "react";
-import { AppContext } from "../context/AppContext";
+import React, { useState, useEffect } from 'react';
+import { getUserAppointments, updateAppointmentStatus } from '../services/appointmentService';
 
 const MyAppointments = () => {
-  const { vaccines, setVaccines } = useContext(AppContext);
-  const [showMore, setShowMore] = useState(false);
+    const [appointments, setAppointments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
-  const cancelAppointment = (id) => {
-    const updatedVaccines = vaccines.filter((vaccine) => vaccine.id !== id);
-    setVaccines(updatedVaccines);
-  };
+    useEffect(() => {
+        fetchAppointments();
+    }, []);
 
-  return (
-    <div className="max-w-4xl mx-auto mt-12 p-6 bg-white shadow-md rounded-lg">
-      <p className="pb-3 text-lg font-semibold text-gray-700 border-b">
-        Vaccination Appointments
-      </p>
+    const fetchAppointments = async () => {
+        try {
+            const response = await getUserAppointments();
+            setAppointments(response.appointments);
+        } catch (error) {
+            setError(error.message || 'Error fetching appointments');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-      <div className="mt-4 space-y-6">
-        {vaccines
-          .slice(0, showMore ? vaccines.length : 3)
-          .map((item, index) => (
-            <div
-              className="flex flex-col sm:flex-row items-start gap-6 p-4 border rounded-lg shadow-sm"
-              key={item.id}
-            >
-              <div className="w-24 h-24 flex-shrink-0">
-                <img
-                  src={item.image}
-                  alt="Vaccine"
-                  className="w-full h-full object-cover rounded-md"
-                />
-              </div>
+    const handleCancelAppointment = async (id) => {
+        if (!window.confirm('Are you sure you want to cancel this appointment?')) {
+            return;
+        }
 
-              <div className="flex-1 space-y-2">
-                <p className="text-lg font-medium text-gray-800">{item.name}</p>
-                <p className="text-sm text-gray-600">{item.speciality}</p>
-                <p className="text-sm text-gray-600">Dosage: {item.dosage}</p>
-                <p className="text-sm text-gray-600">{item.address}</p>
+        try {
+            await updateAppointmentStatus(id, 'cancelled');
+            alert('Appointment cancelled successfully');
+            fetchAppointments();
+        } catch (error) {
+            setError(error.message || 'Error cancelling appointment');
+        }
+    };
 
-                <p className="text-sm text-gray-600">
-                  <span className="font-semibold">Date and Time:</span>{" "}
-                  {new Date(item.date).toLocaleDateString()} |{" "}
-                  {new Date(item.date).toLocaleTimeString()}
-                </p>
-              </div>
+    const getStatusClass = (status) => {
+        switch (status) {
+            case 'scheduled':
+                return 'bg-blue-100 text-blue-800';
+            case 'completed':
+                return 'bg-green-100 text-green-800';
+            case 'cancelled':
+                return 'bg-red-100 text-red-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
 
-              <div>
-                <button
-                  onClick={() => cancelAppointment(item.id)}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition"
-                >
-                  Cancel Appointment
-                </button>
-              </div>
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center min-h-[60vh]">
+                <div className="text-xl">Loading...</div>
             </div>
-          ))}
+        );
+    }
 
-        {vaccines.length > 3 && !showMore && (
-          <div className="text-center mt-4">
-            <button
-              onClick={() => setShowMore(true)}
-              className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-100 transition"
-            >
-              Show More
-            </button>
-          </div>
-        )}
-      </div>
+    return (
+        <div className="max-w-6xl mx-auto mt-8 px-4">
+            <div className="bg-white p-6 rounded-lg shadow-md">
+                <h2 className="text-2xl font-semibold mb-6">My Appointments</h2>
 
-      {vaccines.length === 0 && (
-        <p className="text-center text-gray-500 mt-4">
-          No appointments scheduled.
-        </p>
-      )}
-    </div>
-  );
+                {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                        {error}
+                    </div>
+                )}
+
+                {appointments.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                        No appointments found
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Vaccine
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Date & Time
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Status
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {appointments.map((appointment) => (
+                                    <tr key={appointment.id}>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm font-medium text-gray-900">
+                                                {appointment.vaccine_name}
+                                            </div>
+                                            <div className="text-sm text-gray-500">
+                                                {appointment.vaccine_manufacturer}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {new Date(appointment.appointment_date).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(appointment.status)}`}>
+                                                {appointment.status.toUpperCase()}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            {appointment.status === 'scheduled' && (
+                                                <button
+                                                    onClick={() => handleCancelAppointment(appointment.id)}
+                                                    className="text-red-600 hover:text-red-900 font-medium"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 };
 
 export default MyAppointments;

@@ -7,6 +7,7 @@ const adminRouter = require("./routes/dashboardRoutes");
 const appointmentRoutes = require('./routes/appointmentRoutes');
 const vaccineRoutes = require('./routes/vaccineRoutes');
 const centerRoutes = require('./routes/centerRoutes');
+const userProfileRoutes = require('./routes/userProfileRoutes');
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use("/api/dashboard", adminRouter);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/vaccines', vaccineRoutes);
 app.use('/api/centers', centerRoutes);
+app.use('/api/profile', userProfileRoutes);
 
 // Handle 404 routes
 app.use((req, res) => {

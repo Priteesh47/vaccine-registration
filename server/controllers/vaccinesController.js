@@ -30,7 +30,6 @@ const getVaccine = async (req, res) => {
 // Create vaccine
 const createVaccine = async (req, res) => {
   const { name, manufacturer, description, dosage, age_group, effectiveness } = req.body;
-  const image_url = req.file ? `/uploads/vaccines/${req.file.filename}` : null;
 
   if (!name || !manufacturer) {
     return res.status(400).json({ error: 'Name and manufacturer are required' });
@@ -38,8 +37,8 @@ const createVaccine = async (req, res) => {
 
   try {
     const [result] = await db.query(
-      'INSERT INTO vaccines (name, manufacturer, description, dosage, age_group, effectiveness, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, manufacturer, description || null, dosage || null, age_group || null, effectiveness || null, image_url]
+      'INSERT INTO vaccines (name, manufacturer, description, dosage, age_group, effectiveness) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, manufacturer, description || null, dosage || null, age_group || null, effectiveness || null]
     );
 
     const [newVaccine] = await db.query('SELECT * FROM vaccines WHERE id = ?', [result.insertId]);
@@ -53,7 +52,6 @@ const createVaccine = async (req, res) => {
 // Update vaccine
 const updateVaccine = async (req, res) => {
   const { name, manufacturer, description, dosage, age_group, effectiveness } = req.body;
-  const image_url = req.file ? `/uploads/vaccines/${req.file.filename}` : null;
 
   try {
     const [existingVaccine] = await db.query('SELECT * FROM vaccines WHERE id = ?', [req.params.id]);
@@ -62,7 +60,7 @@ const updateVaccine = async (req, res) => {
     }
 
     await db.query(
-      'UPDATE vaccines SET name = ?, manufacturer = ?, description = ?, dosage = ?, age_group = ?, effectiveness = ?, image_url = ? WHERE id = ?',
+      'UPDATE vaccines SET name = ?, manufacturer = ?, description = ?, dosage = ?, age_group = ?, effectiveness = ? WHERE id = ?',
       [
         name || existingVaccine[0].name,
         manufacturer || existingVaccine[0].manufacturer,
@@ -70,7 +68,6 @@ const updateVaccine = async (req, res) => {
         dosage || existingVaccine[0].dosage,
         age_group || existingVaccine[0].age_group,
         effectiveness || existingVaccine[0].effectiveness,
-        image_url || existingVaccine[0].image_url,
         req.params.id
       ]
     );

@@ -62,19 +62,19 @@ CREATE TABLE IF NOT EXISTS vaccine_inventory (
     FOREIGN KEY (vaccine_id) REFERENCES vaccines(id)
 );
 
--- Vaccination Records
-CREATE TABLE IF NOT EXISTS vaccination_records (
+-- Create vaccination_records table
+CREATE TABLE vaccination_records (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    patient_id INT,
-    vaccine_id INT,
-    appointment_id INT,
-    dose_number INT NOT NULL,
-    vaccination_date DATETIME NOT NULL,
-    administered_by INT,
-    FOREIGN KEY (patient_id) REFERENCES patients(id),
+    vaccine_id INT NOT NULL,
+    center_id INT NOT NULL,
+    appointment_id INT NOT NULL,
+    administered_date DATETIME NOT NULL,
+    next_dose_date DATE,
+    status ENUM('completed', 'pending', 'cancelled') NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (vaccine_id) REFERENCES vaccines(id),
-    FOREIGN KEY (appointment_id) REFERENCES appointments(id),
-    FOREIGN KEY (administered_by) REFERENCES users(id)
+    FOREIGN KEY (center_id) REFERENCES vaccine_centers(id),
+    FOREIGN KEY (appointment_id) REFERENCES appointments(id)
 );
 
 -- Create vaccine_centers table
