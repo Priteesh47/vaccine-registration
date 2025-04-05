@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { assets } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import api from "../config/axios";
 
 const Login = () => {
@@ -8,100 +9,112 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [roles, setRoles] = useState("User");
-  const [isSignUp, setIsSignUp] = useState(true);
-  const [error, setError] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const onSubmitHandler = async (event) => {
-    event.preventDefault();
-    setError("");
-    setLoading(true);
-
-    if (!validateForm()) {
-      setLoading(false);
-      return;
-    }
-
-    const userData = isSignUp 
-      ? { email, password, name, roles }
-      : { email, password };
-
+  const onSubmitHandler = async (e) => {
+    e.preventDefault();
     try {
-      const endpoint = isSignUp ? "/users/signup" : "/users/login";
-      console.log('Making request to:', endpoint);
-      console.log('With data:', userData);
+        const userData = isSignUp
+            ? {
+                name: name,
+                email: email,
+                password: password,
+                role: roles
+            }
+            : {
+                email: email,
+                password: password
+            };
 
-      const response = await api.post(endpoint, userData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        withCredentials: true
-      });
-      
-      console.log('Response:', response.data);
+        console.log('Making request to:', isSignUp ? '/auth/register' : '/auth/login');
+        console.log('With data:', userData);
 
-      if (response.data.success) {
-        // Store user data and token in localStorage
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        const response = await api.post(
+            isSignUp ? '/auth/register' : '/auth/login',
+            userData
+        );
 
-        // Show success message
-        alert(isSignUp ? "Account created successfully!" : "Login successful!");
+        console.log('Response received:', response.data);
 
-        // Redirect based on role
-        if (response.data.user.roles === "Admin") {
-          navigate("/admin-dashboard");
-        } else {
-          navigate("/user-dashboard");
+        if (response.data.token) {
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+            setName(response.data.user.name);
+            setEmail(response.data.user.email);
+            setPassword("");
+            setRoles(response.data.user.role);
+            toast.success(response.data.message);
+
+            // Get user role from response
+            const userRole = response.data.user?.role;
+            console.log('User role from response:', userRole);
+
+            if (userRole) {
+                if (userRole === 'Admin') {
+                    navigate('/admin-dashboard', { replace: true });
+                } else if (userRole === 'User') {
+                    navigate('/user-dashboard', { replace: true });
+                } else if (userRole === 'Staff') {
+                    navigate('/staff-dashboard', { replace: true });
+                } else {
+                    console.error('Invalid user role:', userRole);
+                    toast.error('Invalid user role');
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                }
+            } else {
+                console.error('No role found in response');
+                toast.error('No role found in response');
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+            }
         }
-      } else {
-        setError(response.data.message || "Something went wrong");
-      }
     } catch (error) {
-      console.error("Error details:", error);
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error("Response data:", error.response.data);
-        console.error("Response status:", error.response.status);
-        console.error("Response headers:", error.response.headers);
-        setError(error.response.data.message || "An error occurred during login");
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error("No response received:", error.request);
-        setError("No response from server. Please try again later.");
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error("Error setting up request:", error.message);
-        setError("An error occurred. Please try again.");
-      }
-    } finally {
-      setLoading(false);
+        console.error('Login/Register error:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+        });
+        
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            const errorMessage = error.response.data?.message || 'An error occurred';
+            toast.error(errorMessage);
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error('No response received:', error.request);
+            toast.error('No response from server');
+        } else {
+            // Something happened in setting up the request that triggered an Error
+            console.error('Error setting up request:', error.message);
+            toast.error('Error setting up request');
+        }
     }
   };
 
   // Form validation
   const validateForm = () => {
     if (!email || !password) {
-      setError("Please fill in all fields.");
+      toast.error("Please fill in all fields.");
       return false;
     }
 
     if (isSignUp && !name) {
-      setError("Please enter your name.");
+      toast.error("Please enter your name.");
       return false;
     }
 
     const emailRegex = /\S+@\S+\.\S+/;
     if (!emailRegex.test(email)) {
-      setError("Please enter a valid email.");
+      toast.error("Please enter a valid email.");
       return false;
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters long.");
+      toast.error("Password must be at least 6 characters long.");
       return false;
     }
 
@@ -114,7 +127,6 @@ const Login = () => {
     setPassword("");
     setName("");
     setRoles("User");
-    setError("");
   };
 
   return (
@@ -132,11 +144,6 @@ const Login = () => {
           <h2 className="text-4xl md:text-5xl font-semibold mb-6 text-black">
             Create an Account
           </h2>
-          {error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
-              {error}
-            </div>
-          )}
           <form onSubmit={onSubmitHandler} className="space-y-4">
             <div>
               <p className="text-lg font-medium text-black">Name</p>
@@ -164,15 +171,16 @@ const Login = () => {
               <p className="text-lg font-medium text-black">Password</p>
               <input
                 type="password"
-                className="w-full p-3 border border-gray-300 rounded-lg"
-                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
                 value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg"
                 required
-                disabled={loading}
+                autoComplete="current-password"
               />
             </div>
             <div>
-              <p className="text-lg font-medium text-black">Roles</p>
+              <p className="text-lg font-medium text-black">Role</p>
               <select
                 className="w-full p-3 border border-gray-300 rounded-lg"
                 onChange={(e) => setRoles(e.target.value)}
@@ -181,6 +189,7 @@ const Login = () => {
                 disabled={loading}
               >
                 <option value="User">User</option>
+                <option value="Admin">Admin</option>
                 <option value="Staff">Staff</option>
               </select>
             </div>
@@ -191,11 +200,11 @@ const Login = () => {
             >
               {loading ? 'Processing...' : 'Create an Account'}
             </button>
-            <p>
+            <p className="text-center">
               Already have an account?{" "}
               <span
                 onClick={() => !loading && toggleForm(false)}
-                className={`text-primary cursor-pointer ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`text-blue-600 cursor-pointer hover:underline ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 Login here
               </span>
@@ -207,11 +216,6 @@ const Login = () => {
           <h2 className="text-4xl md:text-5xl font-semibold mb-6 text-black">
             Login Here
           </h2>
-          {error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
-              {error}
-            </div>
-          )}
           <form onSubmit={onSubmitHandler} className="space-y-4">
             <div>
               <p className="text-lg font-medium text-black">Email</p>
@@ -228,11 +232,12 @@ const Login = () => {
               <p className="text-lg font-medium text-black">Password</p>
               <input
                 type="password"
-                className="w-full p-3 border border-gray-300 rounded-lg"
-                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
                 value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg"
                 required
-                disabled={loading}
+                autoComplete="current-password"
               />
             </div>
             <button
@@ -242,13 +247,13 @@ const Login = () => {
             >
               {loading ? 'Processing...' : 'Login'}
             </button>
-            <p>
+            <p className="text-center">
               Don't have an account?{" "}
               <span
                 onClick={() => !loading && toggleForm(true)}
-                className={`text-primary cursor-pointer ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`text-blue-600 cursor-pointer hover:underline ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                Sign up here
+                Register here
               </span>
             </p>
           </form>

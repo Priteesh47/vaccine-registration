@@ -14,3 +14,32 @@
 ::-webkit-scrollbar {
   @apply hidden;
 }
+
+/* Toast Styles */
+.Toastify__toast {
+  @apply rounded-lg shadow-lg;
+}
+
+.Toastify__toast--success {
+  @apply bg-green-500 text-white;
+}
+
+.Toastify__toast--error {
+  @apply bg-red-500 text-white;
+}
+
+.Toastify__toast--warning {
+  @apply bg-yellow-500 text-white;
+}
+
+.Toastify__toast--info {
+  @apply bg-blue-500 text-white;
+}
+
+.Toastify__progress-bar {
+  @apply bg-white bg-opacity-30;
+}
+
+.Toastify__close-button {
+  @apply text-white opacity-75 hover:opacity-100;
+}

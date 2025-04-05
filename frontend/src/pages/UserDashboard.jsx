@@ -1,92 +1,181 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { assets } from "../assets/assets";
-import axios from "axios";
+import api from "../config/axios";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { vaccines as defaultVaccines } from '../assets/assets';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("overview");
-
-  // States for different sections
-  const [vaccineStats, setVaccineStats] = useState({
-    totalVaccines: 0,
-    completedVaccines: 0,
-    upcomingVaccines: 0,
+  const [stats, setStats] = useState({
+    totalAppointments: 0,
+    completedAppointments: 0,
+    upcomingAppointments: 0,
+    recentAppointments: [],
   });
+  const [loading, setLoading] = useState(true);
+  const [appointments, setAppointments] = useState([]);
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [showAppointmentForm, setShowAppointmentForm] = useState(false);
+  const [appointmentForm, setAppointmentForm] = useState({
+    vaccineId: "",
+    centerId: "",
+    appointmentDate: "",
+    appointmentTime: "",
+    notes: "",
+  });
+  const [vaccines, setVaccines] = useState(defaultVaccines);
+  const [centers, setCenters] = useState([]);
 
-  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
-  const [recentVaccinations, setRecentVaccinations] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-
-  // Fetch user data and stats
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        const user = localStorage.getItem("user");
-        if (!user) {
-          navigate("/login");
-          return;
-        }
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user"));
 
-        setUserData(JSON.parse(user));
+    if (!token || !user || user.role !== "User") {
+      navigate("/login");
+      return;
+    }
 
-        // Simulated API calls - replace with actual API endpoints
-        // Fetch vaccine stats
-        const statsResponse = await axios.get("http://localhost:8009/api/vaccine-stats");
-        setVaccineStats(statsResponse.data);
-
-        // Fetch appointments
-        const appointmentsResponse = await axios.get("http://localhost:8009/api/appointments");
-        setUpcomingAppointments(appointmentsResponse.data);
-
-        // Fetch recent vaccinations
-        const vaccinationsResponse = await axios.get("http://localhost:8009/api/vaccinations");
-        setRecentVaccinations(vaccinationsResponse.data);
-
-        // Fetch notifications
-        const notificationsResponse = await axios.get("http://localhost:8009/api/notifications");
-        setNotifications(notificationsResponse.data);
-
-      } catch (err) {
-        setError(err.message);
-        console.error("Error fetching dashboard data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    setUserData(user);
     fetchDashboardData();
+    fetchAppointments();
+    fetchVaccines();
+    fetchCenters();
   }, [navigate]);
 
-  // Loading state
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/user/stats");
+
+      if (response.data.success) {
+        setStats(response.data.stats);
+      } else {
+        toast.error(response.data.message || "Failed to fetch dashboard data");
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      toast.error(
+        error.response?.data?.message ||
+          "An error occurred while fetching dashboard data"
+      );
+
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/login");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/appointments/user");
+      setAppointments(response.data);
+    } catch (error) {
+      toast.error("Failed to fetch appointments");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchVaccines = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/vaccines");
+      // Combine default vaccines with API vaccines, removing duplicates
+      const apiVaccines = response.data;
+      const combinedVaccines = [...defaultVaccines];
+      
+      apiVaccines.forEach(apiVaccine => {
+        if (!combinedVaccines.some(v => v.name === apiVaccine.name)) {
+          combinedVaccines.push(apiVaccine);
+        }
+      });
+      
+      setVaccines(combinedVaccines);
+    } catch (error) {
+      console.error("Error fetching vaccines:", error);
+      toast.error("Failed to fetch vaccines");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCenters = async () => {
+    try {
+      const response = await api.get("/centers");
+      setCenters(response.data);
+    } catch (error) {
+      toast.error("Failed to fetch centers");
+    }
+  };
+
+  const handleAppointmentChange = (e) => {
+    const { name, value } = e.target;
+    setAppointmentForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleAppointmentSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.post("/appointments/create", {
+        vaccine_id: appointmentForm.vaccineId,
+        center_id: appointmentForm.centerId,
+        appointment_date: `${appointmentForm.appointmentDate} ${appointmentForm.appointmentTime}`,
+        notes: appointmentForm.notes,
+      });
+
+      if (response.data) {
+        toast.success("Appointment created successfully");
+        setShowAppointmentForm(false);
+        setAppointmentForm({
+          vaccineId: "",
+          centerId: "",
+          appointmentDate: "",
+          appointmentTime: "",
+          notes: "",
+        });
+        fetchAppointments();
+      }
+    } catch (error) {
+      console.error("Error creating appointment:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to create appointment"
+      );
+    }
+  };
+
+  const handleCancelAppointment = async (appointmentId) => {
+    if (window.confirm("Are you sure you want to cancel this appointment?")) {
+      try {
+        await api.put(`/api/appointments/${appointmentId}/cancel`);
+        toast.success("Appointment cancelled successfully");
+        fetchAppointments();
+      } catch (error) {
+        toast.error("Failed to cancel appointment");
+      }
+    }
+  };
+
+  const filteredAppointments =
+    selectedStatus === "all"
+      ? appointments
+      : appointments.filter(
+          (appointment) => appointment.status === selectedStatus
+        );
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center text-red-600">
-          <p>Error loading dashboard: {error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-          >
-            Retry
-          </button>
-        </div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
@@ -98,22 +187,24 @@ const UserDashboard = () => {
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center space-x-4">
-              <img
-                src={assets.profile}
-                alt="Profile"
-                className="w-16 h-16 rounded-full border-2 border-white"
-              />
+              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center">
+                <span className="text-2xl font-bold text-blue-600">
+                  {userData?.name?.charAt(0)}
+                </span>
+              </div>
               <div>
-                <h1 className="text-2xl font-bold">Welcome, {userData?.name}!</h1>
+                <h1 className="text-2xl font-bold">
+                  Welcome, {userData?.name}!
+                </h1>
                 <p className="text-blue-100">
-                  {userData?.roles} | {userData?.email}
+                  {userData?.role} | {userData?.email}
                 </p>
               </div>
             </div>
             <div className="mt-4 md:mt-0">
               <button
-                onClick={() => navigate("/appointment/new")}
-                className="bg-white text-blue-600 px-6 py-2 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200"
+                onClick={() => setShowAppointmentForm(true)}
+                className="bg-white text-blue-600 px-6 py-2 rounded-full font-semibold hover:bg-blue-50 transition-colors"
               >
                 Book New Appointment
               </button>
@@ -122,37 +213,15 @@ const UserDashboard = () => {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4">
-          <div className="flex space-x-8">
-            {["overview", "appointments", "history", "notifications"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-4 px-2 font-medium transition-colors duration-200 border-b-2 ${
-                  activeTab === tab
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
+      {/* Stats Section */}
       <div className="container mx-auto px-4 py-8">
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200">
+          <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500">Total Vaccines</p>
-                <h3 className="text-2xl font-bold text-gray-800">
-                  {vaccineStats.totalVaccines}
+                <p className="text-gray-500">Total Appointments</p>
+                <h3 className="text-2xl font-bold text-blue-600">
+                  {stats.totalAppointments}
                 </h3>
               </div>
               <div className="bg-blue-100 p-3 rounded-full">
@@ -166,19 +235,19 @@ const UserDashboard = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="2"
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200">
+          <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500">Completed</p>
-                <h3 className="text-2xl font-bold text-gray-800">
-                  {vaccineStats.completedVaccines}
+                <p className="text-gray-500">Completed Appointments</p>
+                <h3 className="text-2xl font-bold text-green-600">
+                  {stats.completedAppointments}
                 </h3>
               </div>
               <div className="bg-green-100 p-3 rounded-full">
@@ -199,17 +268,17 @@ const UserDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200">
+          <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500">Upcoming</p>
-                <h3 className="text-2xl font-bold text-gray-800">
-                  {vaccineStats.upcomingVaccines}
+                <p className="text-gray-500">Upcoming Appointments</p>
+                <h3 className="text-2xl font-bold text-purple-600">
+                  {stats.upcomingAppointments}
                 </h3>
               </div>
-              <div className="bg-yellow-100 p-3 rounded-full">
+              <div className="bg-purple-100 p-3 rounded-full">
                 <svg
-                  className="w-6 h-6 text-yellow-500"
+                  className="w-6 h-6 text-purple-500"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -226,208 +295,325 @@ const UserDashboard = () => {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {[
-            {
-              title: "Book Appointment",
-              icon: "M12 6v6m0 0v6m0-6h6m-6 0H6",
-              color: "blue",
-              onClick: () => navigate("/appointment/new"),
-            },
-            {
-              title: "Update Profile",
-              icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
-              color: "green",
-              onClick: () => navigate("/my-profile"),
-            },
-            {
-              title: "View History",
-              icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
-              color: "purple",
-              onClick: () => setActiveTab("history"),
-            },
-            {
-              title: "Help Center",
-              icon: "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-              color: "indigo",
-              onClick: () => navigate("/help"),
-            },
-          ].map((action, index) => (
-            <button
-              key={index}
-              onClick={action.onClick}
-              className={`bg-${action.color}-500 hover:bg-${action.color}-600 text-white rounded-lg p-6 flex flex-col items-center justify-center transition-all duration-200 hover:transform hover:scale-105`}
-            >
-              <svg
-                className="w-8 h-8 mb-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d={action.icon}
-                />
-              </svg>
-              <span className="text-sm font-semibold">{action.title}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Conditional Content Based on Active Tab */}
-        {activeTab === "overview" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Upcoming Appointments */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Upcoming Appointments
-              </h2>
-              {upcomingAppointments.length > 0 ? (
-                <div className="space-y-4">
-                  {upcomingAppointments.map((appointment) => (
-                    <div
-                      key={appointment.id}
-                      className="border-l-4 border-blue-500 pl-4 py-2"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold text-gray-800">
-                            {appointment.vaccineName}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {appointment.date} at {appointment.time}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {appointment.location}
-                          </p>
-                        </div>
-                        <span
-                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            appointment.status === "Confirmed"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {appointment.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center py-4">
-                  No upcoming appointments
+        {/* Appointments Section */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  My Appointments
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Manage your vaccination appointments
                 </p>
-              )}
-            </div>
-
-            {/* Recent Vaccinations */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Recent Vaccinations
-              </h2>
-              {recentVaccinations.length > 0 ? (
-                <div className="space-y-4">
-                  {recentVaccinations.map((vaccination) => (
-                    <div
-                      key={vaccination.id}
-                      className="border-l-4 border-green-500 pl-4 py-2"
-                    >
-                      <h3 className="font-semibold text-gray-800">
-                        {vaccination.vaccineName}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {vaccination.date}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {vaccination.center}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center py-4">
-                  No vaccination history
-                </p>
-              )}
+              </div>
+              <div className="w-full md:w-auto">
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="block w-full md:w-48 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                >
+                  <option value="all">All Appointments</option>
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
             </div>
           </div>
-        )}
 
-        {activeTab === "appointments" && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              All Appointments
-            </h2>
-            {/* Add your appointments table or list here */}
-          </div>
-        )}
-
-        {activeTab === "history" && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Vaccination History
-            </h2>
-            {/* Add your vaccination history here */}
-          </div>
-        )}
-
-        {activeTab === "notifications" && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Notifications
-            </h2>
-            {notifications.length > 0 ? (
-              <div className="space-y-4">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg"
+          <div className="divide-y divide-gray-200">
+            {filteredAppointments.length === 0 ? (
+              <div className="p-6 text-center">
+                <svg
+                  className="mx-auto h-12 w-12 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">
+                  No appointments
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Get started by booking a new appointment.
+                </p>
+                <div className="mt-6">
+                  <button
+                    onClick={() => setShowAppointmentForm(true)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    <div
-                      className={`p-2 rounded-full ${
-                        notification.type === "appointment"
-                          ? "bg-blue-100 text-blue-500"
-                          : "bg-yellow-100 text-yellow-500"
-                      }`}
+                    <svg
+                      className="-ml-1 mr-2 h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <svg
-                        className="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                        />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-800">
-                        {notification.title}
-                      </h3>
-                      <p className="text-gray-600">{notification.message}</p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {notification.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                    New Appointment
+                  </button>
+                </div>
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-4">
-                No new notifications
-              </p>
+              filteredAppointments.map((appointment) => (
+                <div
+                  key={appointment.id}
+                  className="p-6 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex flex-col md:flex-row justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-lg font-medium text-gray-900">
+                          {appointment.vaccine_name}
+                        </h3>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            appointment.status === "confirmed"
+                              ? "bg-green-100 text-green-800"
+                              : appointment.status === "pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : appointment.status === "completed"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {appointment.status.charAt(0).toUpperCase() +
+                            appointment.status.slice(1)}
+                        </span>
+                      </div>
+                      <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-500">Center</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {appointment.center_name}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Date & Time</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {new Date(
+                              appointment.appointment_date
+                            ).toLocaleDateString()}{" "}
+                            at {appointment.appointment_time}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      {appointment.status === "pending" && (
+                        <button
+                          onClick={() =>
+                            handleCancelAppointment(appointment.id)
+                          }
+                          className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        >
+                          Cancel Appointment
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Vaccines Section */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Available Vaccines</h2>
+        {loading ? (
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {vaccines.map((vaccine) => (
+              <div key={vaccine._id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                {vaccine.image && (
+                  <div className="h-48 w-full">
+                    <img
+                      src={vaccine.image}
+                      alt={vaccine.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {vaccine.name}
+                  </h3>
+                  <p className="text-sm text-gray-500 mb-2">
+                    <span className="font-medium">Features:</span> {vaccine.features}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-2">
+                    <span className="font-medium">Dosage:</span> {vaccine.dosage}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    <span className="font-medium">Speciality:</span> {vaccine.speciality}
+                  </p>
+                  <button
+                    onClick={() => {
+                      setAppointmentForm(prev => ({
+                        ...prev,
+                        vaccineId: vaccine._id
+                      }));
+                      setShowAppointmentForm(true);
+                    }}
+                    className="mt-4 w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    Book Appointment
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
+
+      {/* Appointment Form Modal */}
+      {showAppointmentForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-4">Book New Appointment</h2>
+            <form onSubmit={handleAppointmentSubmit}>
+              <div className="space-y-4">
+                <div>
+                  <label
+                    htmlFor="vaccineId"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Select Vaccine
+                  </label>
+                  <select
+                    id="vaccineId"
+                    name="vaccineId"
+                    value={appointmentForm.vaccineId}
+                    onChange={handleAppointmentChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    required
+                  >
+                    <option value="">Select a vaccine</option>
+                    {vaccines.map((vaccine) => (
+                      <option key={vaccine._id} value={vaccine._id}>
+                        {vaccine.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="centerId"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Select Center
+                  </label>
+                  <select
+                    id="centerId"
+                    name="centerId"
+                    value={appointmentForm.centerId}
+                    onChange={handleAppointmentChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    required
+                  >
+                    <option value="">Select a center</option>
+                    {centers.map((center) => (
+                      <option key={center.id} value={center.id}>
+                        {center.name} - {center.city}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="appointmentDate"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Appointment Date
+                  </label>
+                  <input
+                    type="date"
+                    id="appointmentDate"
+                    name="appointmentDate"
+                    value={appointmentForm.appointmentDate}
+                    onChange={handleAppointmentChange}
+                    min={new Date().toISOString().split("T")[0]}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="appointmentTime"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Appointment Time
+                  </label>
+                  <input
+                    type="time"
+                    id="appointmentTime"
+                    name="appointmentTime"
+                    value={appointmentForm.appointmentTime}
+                    onChange={handleAppointmentChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="notes"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Additional Notes
+                  </label>
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    rows={3}
+                    value={appointmentForm.notes}
+                    onChange={handleAppointmentChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    placeholder="Any special requirements or notes..."
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAppointmentForm(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Book Appointment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

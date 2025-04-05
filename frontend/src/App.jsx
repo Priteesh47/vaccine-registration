@@ -1,41 +1,43 @@
-import React from "react";
-import { Route, Routes } from "react-router-dom";
-
-import Home from "./pages/Home";
-import Vaccines from "./pages/Vaccines";
-import Contact from "./pages/Contact";
-import Login from "./pages/Login";
-import About from "./pages/About";
-import Center from "./pages/Center";
-import MyProfile from "./pages/MyProfile";
-import MyAppointments from "./pages/MyAppointments";
-import Appointment from "./pages/Appointment";
+import { Routes, Route } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
-import UserDashboard from "./pages/UserDashboard";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import AdminDashboard from "./pages/AdminDashboard";
+import UserDashboard from "./pages/UserDashboard";
+import StaffDashboard from "./pages/StaffDashboard";
+import CreateAppointment from "./pages/CreateAppointment";
+import MyAppointments from "./pages/MyAppointments";
+import MyProfile from "./pages/MyProfile";
+import Vaccines from "./pages/Vaccines";
+import Center from "./pages/Center";
+import Contact from "./pages/Contact";
+import About from "./pages/About";
 
-const App = () => {
+function App() {
   return (
-    <div className="w-full">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/vaccines" element={<Vaccines />} />
-        <Route path="/vaccines/:speciality" element={<Vaccines />} />
-        <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/center" element={<Center />} />
-        <Route path="/my-profile" element={<MyProfile />} />
-        <Route path="/my-appointments" element={<MyAppointments />} />
-        <Route path="/appointment/:vacId" element={<Appointment />} />
-        <Route path="/user-dashboard" element={<UserDashboard />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/user-dashboard" element={<UserDashboard />} />
+        <Route path="/staff-dashboard" element={<StaffDashboard />} />
+        <Route path="/create-appointment" element={<CreateAppointment />} />
+        <Route path="/my-appointments" element={<MyAppointments />} />
+        <Route path="/my-profile" element={<MyProfile />} />
+        <Route path="/vaccines" element={<Vaccines />} />
+        <Route path="/center" element={<Center />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/about" element={<About />} />
       </Routes>
-      <Footer />
+      <ToastContainer position="bottom-right" />
     </div>
   );
-};
+}
 
 export default App;
