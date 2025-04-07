@@ -1,13 +1,10 @@
--- Create vaccine_centers table
-CREATE TABLE IF NOT EXISTS vaccine_centers (
+-- Create centers table
+CREATE TABLE IF NOT EXISTS centers (
   id INT PRIMARY KEY AUTO_INCREMENT,
   name VARCHAR(255) NOT NULL,
-  address TEXT NOT NULL,
-  city VARCHAR(100) NOT NULL,
-  state VARCHAR(100) NOT NULL,
-  phone VARCHAR(20) NOT NULL,
-  email VARCHAR(255) NOT NULL,
-  facilities TEXT,
+  location VARCHAR(255) NOT NULL,
+  working_hours VARCHAR(255),
+  contact_info TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ); 

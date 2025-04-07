@@ -11,6 +11,7 @@ const StaffDashboard = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('appointments');
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalVaccines: 0,
@@ -68,7 +69,7 @@ const StaffDashboard = () => {
     }
 
     setUserData(user);
-    fetchDashboardStats();
+    fetchStats();
     fetchUsers();
     fetchVaccines();
     fetchCenters();
@@ -76,15 +77,15 @@ const StaffDashboard = () => {
     fetchAppointments();
   }, [navigate]);
 
-  const fetchDashboardStats = async () => {
+  const fetchStats = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/api/staff/dashboard/stats");
+      const response = await api.get("/dashboard/stats");
       if (response.data.success) {
         setStats(response.data.stats);
       }
     } catch (error) {
-      console.error("Error fetching dashboard stats:", error);
+      console.error("Error fetching stats:", error);
       toast.error("Failed to fetch dashboard statistics");
     } finally {
       setLoading(false);
@@ -93,7 +94,7 @@ const StaffDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await api.get("/api/staff/users");
+      const response = await api.get("/users");
       if (response.data.success) {
         setUsers(response.data.users);
       }
@@ -105,9 +106,9 @@ const StaffDashboard = () => {
 
   const fetchVaccines = async () => {
     try {
-      const response = await api.get("/api/staff/vaccines");
-      if (response.data.success) {
-        setVaccines(response.data.vaccines);
+      const response = await api.get("/vaccines");
+      if (response.data) {
+        setVaccines(response.data);
       }
     } catch (error) {
       console.error("Error fetching vaccines:", error);
@@ -117,9 +118,12 @@ const StaffDashboard = () => {
 
   const fetchCenters = async () => {
     try {
-      const response = await api.get("/api/staff/centers");
+      console.log("Fetching centers...");
+      const response = await api.get("/centers");
+      console.log("Centers response:", response.data);
       if (response.data.success) {
         setCenters(response.data.centers);
+        console.log("Centers set:", response.data.centers);
       }
     } catch (error) {
       console.error("Error fetching centers:", error);
@@ -129,7 +133,7 @@ const StaffDashboard = () => {
 
   const fetchFeedbacks = async () => {
     try {
-      const response = await api.get("/api/staff/feedbacks");
+      const response = await api.get("/feedback");
       if (response.data.success) {
         setFeedbacks(response.data.feedbacks);
       }
@@ -141,7 +145,7 @@ const StaffDashboard = () => {
 
   const fetchAppointments = async () => {
     try {
-      const response = await api.get("/api/staff/appointments");
+      const response = await api.get("/appointment");
       if (response.data.success) {
         setAppointments(response.data.appointments);
       }
@@ -153,7 +157,7 @@ const StaffDashboard = () => {
 
   const handleUserStatusChange = async (userId, newStatus) => {
     try {
-      const response = await api.put(`/api/staff/users/${userId}/status`, {
+      const response = await api.put(`/users/${userId}/status`, {
         status: newStatus
       });
       if (response.data.success) {
@@ -169,8 +173,19 @@ const StaffDashboard = () => {
   const handleVaccineSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post("/api/staff/vaccines", vaccineForm);
-      if (response.data.success) {
+      const response = await api.post("/vaccines", {
+        name: vaccineForm.name,
+        manufacturer: vaccineForm.manufacturer,
+        description: vaccineForm.description,
+        dosageRequired: parseInt(vaccineForm.dosage),
+        ageGroup: vaccineForm.age_group,
+        sideEffects: vaccineForm.effectiveness,
+        stockAvailable: 100, // Default value
+        price: 0, // Default value
+        daysUntilNextDose: 0 // Default value
+      });
+      
+      if (response.data) {
         toast.success("Vaccine added successfully");
         setShowVaccineForm(false);
         setVaccineForm({
@@ -185,14 +200,14 @@ const StaffDashboard = () => {
       }
     } catch (error) {
       console.error("Error adding vaccine:", error);
-      toast.error("Failed to add vaccine");
+      toast.error(error.response?.data?.message || "Failed to add vaccine");
     }
   };
 
   const handleCenterSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post("/api/staff/centers", centerForm);
+      const response = await api.post("/centers", centerForm);
       if (response.data.success) {
         toast.success("Center added successfully");
         setShowCenterForm(false);
@@ -208,7 +223,27 @@ const StaffDashboard = () => {
       }
     } catch (error) {
       console.error("Error adding center:", error);
-      toast.error("Failed to add center");
+      toast.error(error.response?.data?.message || "Failed to add center");
+    }
+  };
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.put("/staff/profile", profileForm);
+      if (response.data.success) {
+        toast.success("Profile updated successfully");
+        setProfileForm({
+          name: "",
+          email: "",
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: ""
+        });
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error(error.response?.data?.message || "Failed to update profile");
     }
   };
 
@@ -236,26 +271,15 @@ const StaffDashboard = () => {
     }));
   };
 
-  const handleProfileSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await api.put("/api/staff/profile", profileForm);
-      if (response.data.success) {
-        toast.success("Profile updated successfully");
-        setShowProfileForm(false);
-        setProfileForm({
-          name: "",
-          email: "",
-          currentPassword: "",
-          newPassword: "",
-          confirmPassword: ""
-        });
-        setUserData(response.data.user);
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error("Failed to update profile");
-    }
+  const handleProfileClick = () => {
+    setShowProfileForm(true);
+    setProfileForm({
+      name: userData?.name || "",
+      email: userData?.email || "",
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: ""
+    });
   };
 
   const handleImageChange = (e) => {
@@ -304,15 +328,17 @@ const StaffDashboard = () => {
     ? appointments
     : appointments.filter((appointment) => appointment.status === selectedStatus);
 
-  const handleProfileClick = () => {
-    setShowProfileForm(true);
-    setProfileForm({
-      name: userData?.name || "",
-      email: userData?.email || "",
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: ""
-    });
+  const handleDeleteCenter = async (centerId) => {
+    try {
+      const response = await api.delete(`/centers/${centerId}`);
+      if (response.data.success) {
+        toast.success("Center deleted successfully");
+        fetchCenters();
+      }
+    } catch (error) {
+      console.error("Error deleting center:", error);
+      toast.error(error.response?.data?.message || "Failed to delete center");
+    }
   };
 
   if (loading) {
@@ -962,170 +988,66 @@ const StaffDashboard = () => {
           )}
 
           {activeSection === "centers" && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="mb-6 flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Vaccine Centers Management
-                </h2>
-                <button
-                  onClick={() => setShowCenterForm(true)}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Add New Center
-                </button>
-              </div>
-
-              {showCenterForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                  <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-                    <h2 className="text-xl font-semibold mb-4">Add New Center</h2>
-                    <form onSubmit={handleCenterSubmit} className="space-y-4">
-                      <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                          Center Name
-                        </label>
-                        <input
-                          type="text"
-                          id="name"
-                          name="name"
-                          value={centerForm.name}
-                          onChange={handleCenterChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                          Address
-                        </label>
-                        <input
-                          type="text"
-                          id="address"
-                          name="address"
-                          value={centerForm.address}
-                          onChange={handleCenterChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                          City
-                        </label>
-                        <input
-                          type="text"
-                          id="city"
-                          name="city"
-                          value={centerForm.city}
-                          onChange={handleCenterChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label htmlFor="state" className="block text-sm font-medium text-gray-700">
-                          State
-                        </label>
-                        <input
-                          type="text"
-                          id="state"
-                          name="state"
-                          value={centerForm.state}
-                          onChange={handleCenterChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                          Phone Number
-                        </label>
-                        <input
-                          type="tel"
-                          id="phone"
-                          name="phone"
-                          value={centerForm.phone}
-                          onChange={handleCenterChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          id="email"
-                          name="email"
-                          value={centerForm.email}
-                          onChange={handleCenterChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                          required
-                        />
-                      </div>
-
-                      <div className="mt-6 flex justify-end space-x-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setShowCenterForm(false);
-                            setCenterForm({
-                              name: "",
-                              address: "",
-                              city: "",
-                              state: "",
-                              phone: "",
-                              email: ""
-                            });
-                          }}
-                          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                          Add Center
-                        </button>
-                      </div>
-                    </form>
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-white shadow rounded-lg p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Center Management</h2>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Manage vaccination centers and their details
+                    </p>
                   </div>
+                  <button
+                    onClick={() => setShowCenterForm(true)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    Add New Center
+                  </button>
                 </div>
-              )}
 
-              <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                <ul className="divide-y divide-gray-200">
-                  {centers.map((center) => (
-                    <li key={center.id} className="px-6 py-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <h3 className="text-lg font-medium text-gray-900">
-                            {center.name}
-                          </h3>
-                          <p className="mt-1 text-sm text-gray-500">
-                            <span className="font-medium">Address:</span> {center.address}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            <span className="font-medium">Location:</span> {center.city}, {center.state}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            <span className="font-medium">Contact:</span> {center.phone}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            <span className="font-medium">Email:</span> {center.email}
-                          </p>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                {loading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                  </div>
+                ) : centers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No centers found. Add a new center to get started.</p>
+                  </div>
+                ) : (
+                  <div className="mt-6">
+                    <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                      <ul className="divide-y divide-gray-200">
+                        {centers.map((center) => (
+                          <li key={center._id}>
+                            <div className="px-4 py-4 sm:px-6">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-indigo-600 truncate">
+                                    {center.name}
+                                  </p>
+                                  <p className="mt-1 text-sm text-gray-500">
+                                    {center.address}, {center.city}, {center.state}
+                                  </p>
+                                  <p className="mt-1 text-sm text-gray-500">
+                                    Phone: {center.phone} | Email: {center.email}
+                                  </p>
+                                </div>
+                                <div className="ml-4 flex-shrink-0">
+                                  <button
+                                    onClick={() => handleDeleteCenter(center._id)}
+                                    className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1192,7 +1114,7 @@ const StaffDashboard = () => {
 
                 <div className="bg-gray-50 p-6 rounded-lg">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Update Profile</h3>
-                  <form onSubmit={handleProfileSubmit} className="space-y-4">
+                  <form onSubmit={handleProfileUpdate} className="space-y-4">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700">
                         Name
