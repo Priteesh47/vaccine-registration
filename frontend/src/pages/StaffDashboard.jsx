@@ -4,6 +4,7 @@ import api from "../config/axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { vaccines as defaultVaccines } from '../assets/assets';
+import { Doughnut, Line, Bar } from 'react-chartjs-2';
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
@@ -14,14 +15,19 @@ const StaffDashboard = () => {
     totalUsers: 0,
     totalVaccines: 0,
     totalFeedbacks: 0,
-    pendingAppointments: 0
+    pendingAppointments: 0,
+    totalAppointments: 0,
+    completedAppointments: 0,
+    upcomingAppointments: 0,
+    recentAppointments: []
   });
 
-  // Previous state
-  const [activeTab, setActiveTab] = useState("appointments");
-  const [appointments, setAppointments] = useState([]);
-  const [vaccines, setVaccines] = useState(defaultVaccines);
+  // Add missing state variables
+  const [users, setUsers] = useState([]);
+  const [vaccines, setVaccines] = useState([]);
   const [centers, setCenters] = useState([]);
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [showVaccineForm, setShowVaccineForm] = useState(false);
   const [showCenterForm, setShowCenterForm] = useState(false);
@@ -63,20 +69,17 @@ const StaffDashboard = () => {
 
     setUserData(user);
     fetchDashboardStats();
-
-    if (activeTab === "appointments") {
-      fetchAppointments();
-    } else if (activeTab === "vaccines") {
-      fetchVaccines();
-    } else if (activeTab === "centers") {
-      fetchCenters();
-    }
-  }, [activeTab, navigate]);
+    fetchUsers();
+    fetchVaccines();
+    fetchCenters();
+    fetchFeedbacks();
+    fetchAppointments();
+  }, [navigate]);
 
   const fetchDashboardStats = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/staff/stats");
+      const response = await api.get("/api/staff/dashboard/stats");
       if (response.data.success) {
         setStats(response.data.stats);
       }
@@ -88,100 +91,86 @@ const StaffDashboard = () => {
     }
   };
 
-  const fetchAppointments = async () => {
+  const fetchUsers = async () => {
     try {
-      setLoading(true);
-      const response = await api.get("/appointments/staff", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      setAppointments(response.data.appointments);
+      const response = await api.get("/api/staff/users");
+      if (response.data.success) {
+        setUsers(response.data.users);
+      }
     } catch (error) {
-      toast.error("Failed to fetch appointments");
-    } finally {
-      setLoading(false);
+      console.error("Error fetching users:", error);
+      toast.error("Failed to fetch users");
     }
   };
 
   const fetchVaccines = async () => {
     try {
-      setLoading(true);
-      const response = await api.get("/vaccines", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-      });
-      const apiVaccines = response.data;
-      const combinedVaccines = [...defaultVaccines];
-      
-      apiVaccines.forEach(apiVaccine => {
-        if (!combinedVaccines.some(v => v.name === apiVaccine.name)) {
-          combinedVaccines.push(apiVaccine);
-        }
-      });
-      
-      setVaccines(combinedVaccines);
+      const response = await api.get("/api/staff/vaccines");
+      if (response.data.success) {
+        setVaccines(response.data.vaccines);
+      }
     } catch (error) {
       console.error("Error fetching vaccines:", error);
       toast.error("Failed to fetch vaccines");
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchCenters = async () => {
     try {
-      setLoading(true);
-      const response = await api.get("/centers");
-      if (response.data) {
-        setCenters(response.data);
+      const response = await api.get("/api/staff/centers");
+      if (response.data.success) {
+        setCenters(response.data.centers);
       }
     } catch (error) {
       console.error("Error fetching centers:", error);
-      if (error.response?.status === 403) {
-        toast.error("You don't have permission to view centers. Please check your role or login again.");
-        if (!userData?.role || userData.role !== 'Staff') {
-          navigate("/login");
-        }
-      } else {
-        toast.error("Failed to fetch centers");
-      }
-    } finally {
-      setLoading(false);
+      toast.error("Failed to fetch centers");
     }
   };
 
-  const handleStatusChange = async (appointmentId, newStatus) => {
+  const fetchFeedbacks = async () => {
     try {
-      const token = localStorage.getItem("token");
-      await api.put(
-        `/appointments/${appointmentId}/status`,
-        { status: newStatus },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      toast.success("Appointment status updated");
-      fetchAppointments();
+      const response = await api.get("/api/staff/feedbacks");
+      if (response.data.success) {
+        setFeedbacks(response.data.feedbacks);
+      }
     } catch (error) {
-      toast.error("Failed to update appointment status");
+      console.error("Error fetching feedbacks:", error);
+      toast.error("Failed to fetch feedbacks");
+    }
+  };
+
+  const fetchAppointments = async () => {
+    try {
+      const response = await api.get("/api/staff/appointments");
+      if (response.data.success) {
+        setAppointments(response.data.appointments);
+      }
+    } catch (error) {
+      console.error("Error fetching appointments:", error);
+      toast.error("Failed to fetch appointments");
+    }
+  };
+
+  const handleUserStatusChange = async (userId, newStatus) => {
+    try {
+      const response = await api.put(`/api/staff/users/${userId}/status`, {
+        status: newStatus
+      });
+      if (response.data.success) {
+        toast.success("User status updated successfully");
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error("Error updating user status:", error);
+      toast.error("Failed to update user status");
     }
   };
 
   const handleVaccineSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Validate required fields first
-      if (!vaccineForm.name || !vaccineForm.manufacturer) {
-        toast.error("Name and manufacturer are required");
-        return;
-      }
-
-      const response = await api.post("/vaccines", vaccineForm, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (response.data) {
+      const response = await api.post("/api/staff/vaccines", vaccineForm);
+      if (response.data.success) {
         toast.success("Vaccine added successfully");
         setShowVaccineForm(false);
         setVaccineForm({
@@ -195,41 +184,16 @@ const StaffDashboard = () => {
         fetchVaccines();
       }
     } catch (error) {
-      console.error("Error adding vaccine:", error.response?.data || error);
-      const errorMessage = error.response?.data?.error || "Failed to add vaccine";
-      toast.error(errorMessage);
+      console.error("Error adding vaccine:", error);
+      toast.error("Failed to add vaccine");
     }
   };
 
   const handleCenterSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("Authentication token not found. Please login again.");
-        navigate("/login");
-        return;
-      }
-
-      // Validate required fields
-      const requiredFields = ['name', 'address', 'city', 'state', 'phone', 'email'];
-      const missingFields = requiredFields.filter(field => !centerForm[field]);
-      
-      if (missingFields.length > 0) {
-        toast.error(`Missing required fields: ${missingFields.join(', ')}`);
-        return;
-      }
-
-      const response = await api.post("/centers", {
-        name: centerForm.name,
-        address: centerForm.address,
-        city: centerForm.city,
-        state: centerForm.state,
-        phone: centerForm.phone,
-        email: centerForm.email
-      });
-
-      if (response.data) {
+      const response = await api.post("/api/staff/centers", centerForm);
+      if (response.data.success) {
         toast.success("Center added successfully");
         setShowCenterForm(false);
         setCenterForm({
@@ -244,33 +208,54 @@ const StaffDashboard = () => {
       }
     } catch (error) {
       console.error("Error adding center:", error);
-      if (error.response?.status === 403) {
-        toast.error("You don't have permission to add centers. Please check your role or login again.");
-        if (!userData?.role || userData.role !== 'Staff') {
-          navigate("/login");
-        }
-      } else if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error("Failed to add center");
-      }
+      toast.error("Failed to add center");
     }
   };
 
   const handleVaccineChange = (e) => {
     const { name, value } = e.target;
-    setVaccineForm((prev) => ({
+    setVaccineForm(prev => ({
       ...prev,
-      [name]: value,
+      [name]: value
     }));
   };
 
   const handleCenterChange = (e) => {
     const { name, value } = e.target;
-    setCenterForm((prev) => ({
+    setCenterForm(prev => ({
       ...prev,
-      [name]: value,
+      [name]: value
     }));
+  };
+
+  const handleProfileChange = (e) => {
+    const { name, value } = e.target;
+    setProfileForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleProfileSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.put("/api/staff/profile", profileForm);
+      if (response.data.success) {
+        toast.success("Profile updated successfully");
+        setShowProfileForm(false);
+        setProfileForm({
+          name: "",
+          email: "",
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: ""
+        });
+        setUserData(response.data.user);
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
+    }
   };
 
   const handleImageChange = (e) => {
@@ -328,58 +313,6 @@ const StaffDashboard = () => {
       newPassword: "",
       confirmPassword: ""
     });
-  };
-
-  const handleProfileChange = (e) => {
-    const { name, value } = e.target;
-    setProfileForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleProfileSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (profileForm.newPassword && profileForm.newPassword !== profileForm.confirmPassword) {
-      toast.error("New passwords do not match!");
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem("token");
-      const updateData = {
-        name: profileForm.name,
-        email: profileForm.email
-      };
-
-      if (profileForm.newPassword && profileForm.currentPassword) {
-        updateData.currentPassword = profileForm.currentPassword;
-        updateData.newPassword = profileForm.newPassword;
-      }
-
-      const response = await api.put("/staff/profile", updateData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.data.success) {
-        toast.success("Profile updated successfully");
-        setUserData(prev => ({
-          ...prev,
-          name: profileForm.name,
-          email: profileForm.email
-        }));
-        localStorage.setItem("user", JSON.stringify({
-          ...JSON.parse(localStorage.getItem("user")),
-          name: profileForm.name,
-          email: profileForm.email
-        }));
-        setShowProfileForm(false);
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error(error.response?.data?.message || "Failed to update profile");
-    }
   };
 
   if (loading) {
@@ -614,515 +547,651 @@ const StaffDashboard = () => {
 
         {/* Stats Section */}
         <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            {/* Total Users */}
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500">Total Users</p>
-                  <h3 className="text-2xl font-bold text-blue-600">
-                    {stats.totalUsers}
-                  </h3>
-                </div>
-                <div className="bg-blue-100 p-3 rounded-full">
-                  <svg
-                    className="w-6 h-6 text-blue-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                    />
-                  </svg>
-                </div>
+          {activeSection === "dashboard" && (
+            <div className="space-y-8">
+              {/* Welcome Section */}
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Welcome, {userData?.name}!</h1>
+                <p className="mt-2 text-gray-600">Here's an overview of your vaccination center</p>
               </div>
-            </div>
 
-            {/* Total Vaccines */}
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500">Total Vaccines</p>
-                  <h3 className="text-2xl font-bold text-green-600">
-                    {stats.totalVaccines}
-                  </h3>
-                </div>
-                <div className="bg-green-100 p-3 rounded-full">
-                  <svg
-                    className="w-6 h-6 text-green-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            {/* Total Feedbacks */}
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500">Total Feedbacks</p>
-                  <h3 className="text-2xl font-bold text-purple-600">
-                    {stats.totalFeedbacks}
-                  </h3>
-                </div>
-                <div className="bg-purple-100 p-3 rounded-full">
-                  <svg
-                    className="w-6 h-6 text-purple-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            {/* Pending Appointments */}
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500">Pending Appointments</p>
-                  <h3 className="text-2xl font-bold text-yellow-600">
-                    {stats.pendingAppointments}
-                  </h3>
-                </div>
-                <div className="bg-yellow-100 p-3 rounded-full">
-                  <svg
-                    className="w-6 h-6 text-yellow-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Content based on active section */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            {activeTab === "appointments" && (
-              <>
-                <div className="mb-6">
-                  <select
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                  >
-                    <option value="all">All Appointments</option>
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
-                </div>
-
-                <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                  <ul className="divide-y divide-gray-200">
-                    {filteredAppointments.map((appointment) => (
-                      <li key={appointment.id} className="px-6 py-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-lg font-medium text-gray-900">
-                              {appointment.patient_name}
-                            </h3>
-                            <p className="mt-1 text-sm text-gray-500">
-                              Vaccine: {appointment.vaccine_name}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Date:{" "}
-                              {new Date(appointment.appointment_date).toLocaleDateString()}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Time: {appointment.appointment_time}
-                            </p>
-                          </div>
-                          <div className="flex items-center space-x-4">
-                            <select
-                              value={appointment.status}
-                              onChange={(e) =>
-                                handleStatusChange(appointment.id, e.target.value)
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Total Appointments */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Total Appointments</p>
+                      <p className="mt-2 text-3xl font-semibold text-gray-900">{stats.totalAppointments}</p>
+                    </div>
+                    <div className="bg-blue-100 rounded-full p-3">
+                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="h-40">
+                    <Doughnut
+                      data={{
+                        labels: ['Completed', 'Upcoming', 'Cancelled'],
+                        datasets: [{
+                          data: [
+                            Math.max(1, stats.completedAppointments || 0),
+                            Math.max(1, stats.upcomingAppointments || 0),
+                            Math.max(1, (stats.totalAppointments - (stats.completedAppointments || 0) - (stats.upcomingAppointments || 0)) || 0)
+                          ],
+                          backgroundColor: [
+                            '#10B981',  // Green
+                            '#3B82F6',  // Blue
+                            '#EF4444'   // Red
+                          ],
+                          borderColor: '#ffffff',
+                          borderWidth: 2
+                        }]
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                          legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                              boxWidth: 12,
+                              padding: 15,
+                              font: {
+                                size: 12
                               }
-                              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="confirmed">Confirmed</option>
-                              <option value="completed">Completed</option>
-                              <option value="cancelled">Cancelled</option>
-                            </select>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </>
-            )}
-
-            {activeTab === "vaccines" && (
-              <>
-                <div className="mb-6 flex justify-between items-center">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Vaccine Management
-                  </h2>
-                  <button
-                    onClick={() => setShowVaccineForm(true)}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    Add New Vaccine
-                  </button>
+                            }
+                          }
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
 
-                {showVaccineForm && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-                      <h2 className="text-xl font-semibold mb-4">Add New Vaccine</h2>
-                      <form onSubmit={handleVaccineSubmit} className="space-y-4">
-                        <div>
-                          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                            Vaccine Name
-                          </label>
-                          <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            value={vaccineForm.name}
-                            onChange={handleVaccineChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="manufacturer" className="block text-sm font-medium text-gray-700">
-                            Manufacturer
-                          </label>
-                          <input
-                            type="text"
-                            id="manufacturer"
-                            name="manufacturer"
-                            value={vaccineForm.manufacturer}
-                            onChange={handleVaccineChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                            Description
-                          </label>
-                          <textarea
-                            id="description"
-                            name="description"
-                            value={vaccineForm.description}
-                            onChange={handleVaccineChange}
-                            rows={3}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="dosage" className="block text-sm font-medium text-gray-700">
-                            Dosage
-                          </label>
-                          <input
-                            type="text"
-                            id="dosage"
-                            name="dosage"
-                            value={vaccineForm.dosage}
-                            onChange={handleVaccineChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="age_group" className="block text-sm font-medium text-gray-700">
-                            Age Group
-                          </label>
-                          <input
-                            type="text"
-                            id="age_group"
-                            name="age_group"
-                            value={vaccineForm.age_group}
-                            onChange={handleVaccineChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="effectiveness" className="block text-sm font-medium text-gray-700">
-                            Effectiveness
-                          </label>
-                          <input
-                            type="text"
-                            id="effectiveness"
-                            name="effectiveness"
-                            value={vaccineForm.effectiveness}
-                            onChange={handleVaccineChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                          />
-                        </div>
-
-                        <div className="mt-6 flex justify-end space-x-3">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowVaccineForm(false);
-                              setVaccineForm({
-                                name: "",
-                                manufacturer: "",
-                                description: "",
-                                dosage: "",
-                                age_group: "",
-                                effectiveness: ""
-                              });
-                            }}
-                            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                          >
-                            Add Vaccine
-                          </button>
-                        </div>
-                      </form>
+                {/* Completed Vaccinations */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Completed Vaccinations</p>
+                      <p className="mt-2 text-3xl font-semibold text-gray-900">{stats.completedAppointments}</p>
+                    </div>
+                    <div className="bg-green-100 rounded-full p-3">
+                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
                     </div>
                   </div>
-                )}
-
-                <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                  <ul className="divide-y divide-gray-200">
-                    {vaccines.map((vaccine) => (
-                      <li key={vaccine._id} className="px-6 py-4">
-                        <div className="flex items-start">
-                          <div>
-                            <h3 className="text-lg font-medium text-gray-900">
-                              {vaccine.name}
-                            </h3>
-                            <p className="mt-1 text-sm text-gray-500">
-                              Manufacturer: {vaccine.manufacturer}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Dosage: {vaccine.dosage}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Age Group: {vaccine.age_group}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Effectiveness: {vaccine.effectiveness}
-                            </p>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </>
-            )}
-
-            {activeTab === "centers" && (
-              <>
-                <div className="mb-6 flex justify-between items-center">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Vaccine Centers Management
-                  </h2>
-                  <button
-                    onClick={() => setShowCenterForm(true)}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    Add New Center
-                  </button>
+                  <div className="h-40">
+                    <Line
+                      data={{
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        datasets: [{
+                          data: [12, 19, 3, 5, 2, 3],
+                          borderColor: '#10B981',
+                          tension: 0.4,
+                          fill: true,
+                          backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                        }]
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            display: false
+                          }
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            grid: {
+                              display: false
+                            },
+                            ticks: {
+                              display: false
+                            }
+                          },
+                          x: {
+                            grid: {
+                              display: false
+                            }
+                          }
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
 
-                {showCenterForm && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-                      <h2 className="text-xl font-semibold mb-4">Add New Center</h2>
-                      <form onSubmit={handleCenterSubmit} className="space-y-4">
-                        <div>
-                          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                            Center Name
-                          </label>
-                          <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            value={centerForm.name}
-                            onChange={handleCenterChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                            Address
-                          </label>
-                          <input
-                            type="text"
-                            id="address"
-                            name="address"
-                            value={centerForm.address}
-                            onChange={handleCenterChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                            City
-                          </label>
-                          <input
-                            type="text"
-                            id="city"
-                            name="city"
-                            value={centerForm.city}
-                            onChange={handleCenterChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="state" className="block text-sm font-medium text-gray-700">
-                            State
-                          </label>
-                          <input
-                            type="text"
-                            id="state"
-                            name="state"
-                            value={centerForm.state}
-                            onChange={handleCenterChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                            Phone Number
-                          </label>
-                          <input
-                            type="tel"
-                            id="phone"
-                            name="phone"
-                            value={centerForm.phone}
-                            onChange={handleCenterChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                            Email
-                          </label>
-                          <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            value={centerForm.email}
-                            onChange={handleCenterChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                            required
-                          />
-                        </div>
-
-                        <div className="mt-6 flex justify-end space-x-3">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowCenterForm(false);
-                              setCenterForm({
-                                name: "",
-                                address: "",
-                                city: "",
-                                state: "",
-                                phone: "",
-                                email: ""
-                              });
-                            }}
-                            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="submit"
-                            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                          >
-                            Add Center
-                          </button>
-                        </div>
-                      </form>
+                {/* Upcoming Appointments */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Upcoming Appointments</p>
+                      <p className="mt-2 text-3xl font-semibold text-gray-900">{stats.upcomingAppointments}</p>
+                    </div>
+                    <div className="bg-yellow-100 rounded-full p-3">
+                      <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
                     </div>
                   </div>
-                )}
-
-                <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                  <ul className="divide-y divide-gray-200">
-                    {centers.map((center) => (
-                      <li key={center.id} className="px-6 py-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <h3 className="text-lg font-medium text-gray-900">
-                              {center.name}
-                            </h3>
-                            <p className="mt-1 text-sm text-gray-500">
-                              <span className="font-medium">Address:</span> {center.address}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              <span className="font-medium">Location:</span> {center.city}, {center.state}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              <span className="font-medium">Contact:</span> {center.phone}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              <span className="font-medium">Email:</span> {center.email}
-                            </p>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="h-40">
+                    <Bar
+                      data={{
+                        labels: ['This Week', 'Next Week', 'Later'],
+                        datasets: [{
+                          data: [
+                            Math.max(1, stats.upcomingAppointments * 0.4),
+                            Math.max(1, stats.upcomingAppointments * 0.3),
+                            Math.max(1, stats.upcomingAppointments * 0.3)
+                          ],
+                          backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',  // Blue
+                            'rgba(96, 165, 250, 0.8)',  // Lighter Blue
+                            'rgba(147, 197, 253, 0.8)'  // Lightest Blue
+                          ],
+                          borderRadius: 8,
+                          borderWidth: 0
+                        }]
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            display: false
+                          }
+                        },
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                            grid: {
+                              display: false
+                            },
+                            ticks: {
+                              display: false
+                            }
+                          },
+                          x: {
+                            grid: {
+                              display: false
+                            }
+                          }
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
-              </>
-            )}
+              </div>
 
-            {/* Profile Form Modal */}
-            {showProfileForm && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-                  <h2 className="text-xl font-semibold mb-4">Update Profile</h2>
+              {/* Recent Activity */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
+                <div className="space-y-4">
+                  {stats.recentAppointments?.slice(0, 5).map((appointment) => (
+                    <div key={appointment._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-gray-900">{appointment.vaccine?.name}</p>
+                        <p className="text-sm text-gray-600">
+                          {new Date(appointment.appointment_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
+                        appointment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === "users" && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">User Management</h2>
+                <p className="mt-2 text-gray-600">Manage user accounts and permissions</p>
+              </div>
+
+              <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                <ul className="divide-y divide-gray-200">
+                  {users.map((user) => (
+                    <li key={user._id} className="px-6 py-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900">
+                            {user.name}
+                          </h3>
+                          <p className="mt-1 text-sm text-gray-500">
+                            Email: {user.email}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Role: {user.role}
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <button
+                            onClick={() => handleUserStatusChange(user._id, user.status === 'active' ? 'inactive' : 'active')}
+                            className={`px-3 py-1 text-sm font-semibold rounded-full ${
+                              user.status === 'active' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {user.status === 'active' ? 'Active' : 'Inactive'}
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {activeSection === "vaccines" && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="mb-6 flex justify-between items-center">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Vaccine Management
+                </h2>
+                <button
+                  onClick={() => setShowVaccineForm(true)}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Add New Vaccine
+                </button>
+              </div>
+
+              {showVaccineForm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+                    <h2 className="text-xl font-semibold mb-4">Add New Vaccine</h2>
+                    <form onSubmit={handleVaccineSubmit} className="space-y-4">
+                      <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                          Vaccine Name
+                        </label>
+                        <input
+                          type="text"
+                          id="name"
+                          name="name"
+                          value={vaccineForm.name}
+                          onChange={handleVaccineChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="manufacturer" className="block text-sm font-medium text-gray-700">
+                          Manufacturer
+                        </label>
+                        <input
+                          type="text"
+                          id="manufacturer"
+                          name="manufacturer"
+                          value={vaccineForm.manufacturer}
+                          onChange={handleVaccineChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                          Description
+                        </label>
+                        <textarea
+                          id="description"
+                          name="description"
+                          value={vaccineForm.description}
+                          onChange={handleVaccineChange}
+                          rows={3}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="dosage" className="block text-sm font-medium text-gray-700">
+                          Dosage
+                        </label>
+                        <input
+                          type="text"
+                          id="dosage"
+                          name="dosage"
+                          value={vaccineForm.dosage}
+                          onChange={handleVaccineChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="age_group" className="block text-sm font-medium text-gray-700">
+                          Age Group
+                        </label>
+                        <input
+                          type="text"
+                          id="age_group"
+                          name="age_group"
+                          value={vaccineForm.age_group}
+                          onChange={handleVaccineChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="effectiveness" className="block text-sm font-medium text-gray-700">
+                          Effectiveness
+                        </label>
+                        <input
+                          type="text"
+                          id="effectiveness"
+                          name="effectiveness"
+                          value={vaccineForm.effectiveness}
+                          onChange={handleVaccineChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        />
+                      </div>
+
+                      <div className="mt-6 flex justify-end space-x-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowVaccineForm(false);
+                            setVaccineForm({
+                              name: "",
+                              manufacturer: "",
+                              description: "",
+                              dosage: "",
+                              age_group: "",
+                              effectiveness: ""
+                            });
+                          }}
+                          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          Add Vaccine
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                <ul className="divide-y divide-gray-200">
+                  {vaccines.map((vaccine) => (
+                    <li key={vaccine._id} className="px-6 py-4">
+                      <div className="flex items-start">
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900">
+                            {vaccine.name}
+                          </h3>
+                          <p className="mt-1 text-sm text-gray-500">
+                            Manufacturer: {vaccine.manufacturer}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Dosage: {vaccine.dosage}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Age Group: {vaccine.age_group}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Effectiveness: {vaccine.effectiveness}
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {activeSection === "centers" && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="mb-6 flex justify-between items-center">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Vaccine Centers Management
+                </h2>
+                <button
+                  onClick={() => setShowCenterForm(true)}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Add New Center
+                </button>
+              </div>
+
+              {showCenterForm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                  <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+                    <h2 className="text-xl font-semibold mb-4">Add New Center</h2>
+                    <form onSubmit={handleCenterSubmit} className="space-y-4">
+                      <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                          Center Name
+                        </label>
+                        <input
+                          type="text"
+                          id="name"
+                          name="name"
+                          value={centerForm.name}
+                          onChange={handleCenterChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+                          Address
+                        </label>
+                        <input
+                          type="text"
+                          id="address"
+                          name="address"
+                          value={centerForm.address}
+                          onChange={handleCenterChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+                          City
+                        </label>
+                        <input
+                          type="text"
+                          id="city"
+                          name="city"
+                          value={centerForm.city}
+                          onChange={handleCenterChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="state" className="block text-sm font-medium text-gray-700">
+                          State
+                        </label>
+                        <input
+                          type="text"
+                          id="state"
+                          name="state"
+                          value={centerForm.state}
+                          onChange={handleCenterChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                          Phone Number
+                        </label>
+                        <input
+                          type="tel"
+                          id="phone"
+                          name="phone"
+                          value={centerForm.phone}
+                          onChange={handleCenterChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          id="email"
+                          name="email"
+                          value={centerForm.email}
+                          onChange={handleCenterChange}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          required
+                        />
+                      </div>
+
+                      <div className="mt-6 flex justify-end space-x-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowCenterForm(false);
+                            setCenterForm({
+                              name: "",
+                              address: "",
+                              city: "",
+                              state: "",
+                              phone: "",
+                              email: ""
+                            });
+                          }}
+                          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          Add Center
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                <ul className="divide-y divide-gray-200">
+                  {centers.map((center) => (
+                    <li key={center.id} className="px-6 py-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900">
+                            {center.name}
+                          </h3>
+                          <p className="mt-1 text-sm text-gray-500">
+                            <span className="font-medium">Address:</span> {center.address}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            <span className="font-medium">Location:</span> {center.city}, {center.state}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            <span className="font-medium">Contact:</span> {center.phone}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            <span className="font-medium">Email:</span> {center.email}
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {activeSection === "feedback" && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Feedback Management</h2>
+                <p className="mt-2 text-gray-600">View and manage user feedback</p>
+              </div>
+
+              <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                <ul className="divide-y divide-gray-200">
+                  {feedbacks.map((feedback) => (
+                    <li key={feedback._id} className="px-6 py-4">
+                      <div className="flex items-start">
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900">
+                            {feedback.user?.name || 'Anonymous User'}
+                          </h3>
+                          <p className="mt-1 text-sm text-gray-500">
+                            Rating: {feedback.rating}/5
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {feedback.comment}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Date: {new Date(feedback.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {activeSection === "profile" && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Profile Settings</h2>
+                <p className="mt-2 text-gray-600">Manage your account information</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Name</p>
+                      <p className="mt-1 text-gray-900">{userData?.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Email</p>
+                      <p className="mt-1 text-gray-900">{userData?.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Role</p>
+                      <p className="mt-1 text-gray-900">{userData?.role}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 p-6 rounded-lg">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Update Profile</h3>
                   <form onSubmit={handleProfileSubmit} className="space-y-4">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700">
@@ -1135,7 +1204,6 @@ const StaffDashboard = () => {
                         value={profileForm.name}
                         onChange={handleProfileChange}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        required
                       />
                     </div>
 
@@ -1150,13 +1218,12 @@ const StaffDashboard = () => {
                         value={profileForm.email}
                         onChange={handleProfileChange}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        required
                       />
                     </div>
 
                     <div>
                       <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
-                        Current Password (required for password change)
+                        Current Password
                       </label>
                       <input
                         type="password"
@@ -1170,7 +1237,7 @@ const StaffDashboard = () => {
 
                     <div>
                       <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                        New Password (optional)
+                        New Password
                       </label>
                       <input
                         type="password"
@@ -1196,17 +1263,10 @@ const StaffDashboard = () => {
                       />
                     </div>
 
-                    <div className="mt-6 flex justify-end space-x-3">
-                      <button
-                        type="button"
-                        onClick={() => setShowProfileForm(false)}
-                        className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                      >
-                        Cancel
-                      </button>
+                    <div className="pt-4">
                       <button
                         type="submit"
-                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        className="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                       >
                         Update Profile
                       </button>
@@ -1214,8 +1274,8 @@ const StaffDashboard = () => {
                   </form>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -19,6 +19,9 @@ const createAppointment = async (req, res) => {
             });
         }
 
+        // Format the date for MySQL
+        const formattedDate = new Date(appointment_date).toISOString().slice(0, 19).replace('T', ' ');
+
         // Validate appointment date is in the future
         const appointmentDate = new Date(appointment_date);
         if (appointmentDate < new Date()) {
@@ -44,7 +47,7 @@ const createAppointment = async (req, res) => {
         // Check for conflicting appointments
         const [conflicts] = await db.query(
             'SELECT * FROM appointments WHERE user_id = ? AND appointment_date = ? AND status != "cancelled"',
-            [user_id, appointment_date]
+            [user_id, formattedDate]
         );
 
         if (conflicts.length > 0) {
@@ -57,7 +60,7 @@ const createAppointment = async (req, res) => {
         // Insert appointment
         const [result] = await db.query(
             'INSERT INTO appointments (user_id, vaccine_id, appointment_date, status) VALUES (?, ?, ?, ?)',
-            [user_id, vaccine_id, appointment_date, 'scheduled']
+            [user_id, vaccine_id, formattedDate, 'scheduled']
         );
 
         // Get the created appointment with details

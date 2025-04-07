@@ -13,11 +13,14 @@ import VaccinesPage from "./pages/VaccinesPage";
 import UserProfile from "./pages/UserProfile";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import { Doughnut } from "react-chartjs-2";
 
 function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
+     
+
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
