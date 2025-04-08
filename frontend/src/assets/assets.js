@@ -239,53 +239,54 @@ export const vaccines = [
 
 export const Centers = [
   {
-    name: "National Vaccination Centers",
-    address: "Nottingham UK",
-    image: cen1,
-    email: "NationalHospital@gmail.com",
+    name: "City Health Center",
+    description: "Main vaccination center in the city, offering comprehensive immunization services",
+    address: "123 Main Street, Downtown, City, State 10001",
+    email: "cityhealth@example.com",
+    vaccines: ["COVID-19", "Flu", "Hepatitis B", "MMR", "Tetanus"]
   },
-
   {
-    name: "Birnigham Hospital",
-    address: "Birmingham UK",
-    image: cen2,
-    email: "Birmingham@gmail.com",
+    name: "Community Medical Center",
+    description: "Serving the local community with state-of-the-art facilities",
+    address: "456 Oak Avenue, Suburb District, City, State 10002",
+    email: "communitymed@example.com",
+    vaccines: ["COVID-19", "MMR", "Tetanus", "Hepatitis A", "Polio"]
   },
-
   {
     name: "Mediciti Hospital",
-    address: "Nakkhu Kathmandu",
-    image: cen3,
-    email: "Mediciti@gmail.com",
+    description: "Full-service medical facility with dedicated vaccination wing",
+    address: "Nakhu, Kathmandu",
+    email: "medictinep@gmail.com",
+    vaccines: ["COVID-19", "Flu", "Hepatitis A", "Hepatitis B", "Varicella"]
   },
-
   {
-    name: "Amsterdam Vaccine Provider",
-    address: "Amsterdam Netherlands",
-    image: cen4,
-    email: "amsternvacc@gmail.com",
+    name: "Westside Health Clinic",
+    description: "Modern clinic serving the western region",
+    address: "321 Elm Street, Westside, City, State 10004",
+    email: "westside@example.com",
+    vaccines: ["COVID-19", "Flu", "HPV", "Meningococcal", "Pneumococcal"]
   },
-
   {
     name: "Norvic Hospital",
-    address: "Thapathali Kathmandu",
-    image: cen5,
-    email: "NorvicNep@gmail.com",
+    description: "Comprehensive healthcare facility in the eastern district",
+    address: "Thapathali, Kathmandu",
+    email: "NorvicNepal@gmail.com",
+    vaccines: ["COVID-19", "Flu", "Hepatitis B", "MMR", "Tetanus"]
   },
-
   {
     name: "Civil Service Hospital",
-    address: "New Baneshwore kathmandu",
-    image: cen6,
-    email: "civilserv@gmail.com",
+    description: "Community-focused hospital with dedicated vaccination services",
+    address: "New Baneshwor, Kathmandu",
+    email: "CivilServiceNep@gmail.com",
+    vaccines: ["COVID-19", "Flu", "Hepatitis A", "Polio", "Varicella"]
   },
-
   {
-    name: "BnB Hospital",
+    name: "B & B Hospital",
+    description: "Modern facility serving the southern communities",
     address: "Gwarko, Lalitpur",
-    image: cen7,
-    email: "bnbhosp@gmail.com",
-  },
+    email: "bnbNep@gmail.com",
+    vaccines: ["COVID-19", "Flu", "HPV", "Meningococcal", "Pneumococcal"]
+  }
 ];
 
 export const specialityData = [
@@ -367,4 +368,67 @@ export const specialityData = [
       "Vaccines to prevent rubella infection, often combined with measles and mumps.",
     image: vac14,
   },
+];
+
+export const centers = [
+  {
+    id: 1,
+    name: "Central Vaccination Center",
+    description: "A state-of-the-art vaccination facility with modern equipment and trained staff.",
+    location: "Kathmandu",
+    operatingHours: "8:00 AM - 6:00 PM",
+    vaccines: ["Covid-19", "Polio", "Hepatitis B"],
+    capacity: 100,
+    contact: "+977-1-1234567"
+  },
+  {
+    id: 2,
+    name: "Pokhara Health Hub",
+    description: "Located in the heart of Pokhara, providing comprehensive vaccination services.",
+    location: "Pokhara",
+    operatingHours: "9:00 AM - 5:00 PM",
+    vaccines: ["Covid-19", "Influenza", "MMR"],
+    capacity: 80,
+    contact: "+977-61-123456"
+  },
+  {
+    id: 3,
+    name: "Lalitpur Medical Center",
+    description: "Modern facility with specialized pediatric vaccination services.",
+    location: "Lalitpur",
+    operatingHours: "8:30 AM - 5:30 PM",
+    vaccines: ["Covid-19", "Polio", "DTP"],
+    capacity: 60,
+    contact: "+977-1-2345678"
+  },
+  {
+    id: 4,
+    name: "Bhaktapur Health Center",
+    description: "Community-focused vaccination center with friendly staff.",
+    location: "Bhaktapur",
+    operatingHours: "8:00 AM - 4:00 PM",
+    vaccines: ["Covid-19", "Hepatitis A", "Typhoid"],
+    capacity: 50,
+    contact: "+977-1-3456789"
+  },
+  {
+    id: 5,
+    name: "Biratnagar Vaccination Hub",
+    description: "Eastern region's largest vaccination facility with 24/7 emergency services.",
+    location: "Biratnagar",
+    operatingHours: "7:00 AM - 7:00 PM",
+    vaccines: ["Covid-19", "Rabies", "Japanese Encephalitis"],
+    capacity: 120,
+    contact: "+977-21-123456"
+  },
+  {
+    id: 6,
+    name: "Butwal Health Center",
+    description: "Western region's premier vaccination facility with specialized services.",
+    location: "Butwal",
+    operatingHours: "8:00 AM - 5:00 PM",
+    vaccines: ["Covid-19", "Tetanus", "Yellow Fever"],
+    capacity: 70,
+    contact: "+977-71-123456"
+  }
 ];

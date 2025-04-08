@@ -4,13 +4,51 @@ const db = require('../config/db');
 const { authenticateToken, authorizeRole } = require('../middleware/auth');
 
 // Get all centers
-router.get('/', authenticateToken, authorizeRole(['admin', 'staff']), async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const [centers] = await db.query('SELECT * FROM centers');
-    res.json(centers);
+    // Test database connection first
+    await db.query('SELECT 1');
+    
+    // If connection is successful, proceed with the query
+    const [centers] = await db.query('SELECT * FROM vaccine_centers');
+    
+    if (!centers) {
+      return res.status(404).json({
+        success: false,
+        message: 'No centers found'
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: centers
+    });
   } catch (error) {
-    console.error('Error fetching centers:', error);
-    res.status(500).json({ message: 'Error fetching centers' });
+    console.error('Database error:', error);
+    console.error('Error stack:', error.stack);
+    
+    // Check for specific error types
+    if (error.code === 'ER_NO_SUCH_TABLE') {
+      return res.status(500).json({
+        success: false,
+        message: 'Vaccine centers table does not exist',
+        error: error.message
+      });
+    }
+    
+    if (error.code === 'ECONNREFUSED' || error.code === 'ER_ACCESS_DENIED_ERROR') {
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection error',
+        error: error.message
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching centers',
+      error: error.message
+    });
   }
 });
 

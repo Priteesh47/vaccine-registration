@@ -1,13 +1,19 @@
-const db = require('../config/database');
+const db = require('../config/db');
 
 // Get all vaccines
 const getAllVaccines = async (req, res) => {
   try {
     const [vaccines] = await db.query('SELECT * FROM vaccines');
-    res.json(vaccines);
+    res.json({
+      success: true,
+      data: vaccines
+    });
   } catch (error) {
     console.error('Error fetching vaccines:', error);
-    res.status(500).json({ error: 'Failed to fetch vaccines' });
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to fetch vaccines'
+    });
   }
 };
 

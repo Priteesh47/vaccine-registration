@@ -14,7 +14,7 @@ const DashboardAppointments = () => {
   const fetchAppointments = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/appointments', {
+      const response = await axios.get('http://localhost:5001/api/appointments', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAppointments(response.data);

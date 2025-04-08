@@ -1,8 +1,9 @@
 import axios from 'axios';
 
-const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+const instance = axios.create({
+  baseURL: 'http://localhost:9000/api',
   withCredentials: true,
+  timeout: 5000,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
@@ -10,7 +11,7 @@ const api = axios.create({
 });
 
 // Request interceptor
-api.interceptors.request.use(
+instance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -24,7 +25,7 @@ api.interceptors.request.use(
 );
 
 // Response interceptor
-api.interceptors.response.use(
+instance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
@@ -36,4 +37,4 @@ api.interceptors.response.use(
   }
 );
 
-export default api; 
+export default instance; 

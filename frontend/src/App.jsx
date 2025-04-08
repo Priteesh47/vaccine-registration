@@ -9,6 +9,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import UserDashboard from "./pages/UserDashboard";
 import StaffDashboard from "./pages/StaffDashboard";
 import Center from "./pages/Center";
+import Centers from "./pages/Centers";
 import VaccinesPage from "./pages/VaccinesPage";
 import UserProfile from "./pages/UserProfile";
 import About from "./pages/About";
@@ -27,6 +28,7 @@ function App() {
         <Route path="/user-dashboard" element={<UserDashboard />} />
         <Route path="/staff-dashboard" element={<StaffDashboard />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/center" element={<Centers />} />
         <Route path="/center/:id" element={<Center />} />
         <Route path="/vaccines" element={<VaccinesPage />} />
         <Route path="/profile" element={<UserProfile />} />

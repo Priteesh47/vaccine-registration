@@ -19,7 +19,7 @@ const DashboardProfile = () => {
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/profile', {
+      const response = await axios.get('http://localhost:5001/api/profile', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const { name, email } = response.data;
@@ -45,7 +45,7 @@ const DashboardProfile = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        'http://localhost:5000/api/profile',
+        'http://localhost:5001/api/profile',
         {
           name: profile.name,
           email: profile.email,

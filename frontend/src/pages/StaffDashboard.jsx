@@ -121,7 +121,7 @@ const StaffDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await api.get("/users");
+      const response = await api.get("/api/user/all");
       if (response.data.success) {
         setUsers(response.data.users);
       }
@@ -134,12 +134,16 @@ const StaffDashboard = () => {
   const fetchVaccines = async () => {
     try {
       const response = await api.get("/vaccines");
-      if (response.data) {
-        setVaccines(response.data);
+      if (response.data.success) {
+        setVaccines(response.data.data || []);
+      } else {
+        setVaccines([]);
+        console.error("Failed to fetch vaccines:", response.data.message);
       }
     } catch (error) {
       console.error("Error fetching vaccines:", error);
       toast.error("Failed to fetch vaccines");
+      setVaccines([]);
     }
   };
 
@@ -160,7 +164,7 @@ const StaffDashboard = () => {
 
   const fetchFeedbacks = async () => {
     try {
-      const response = await api.get("/feedback");
+      const response = await api.get("/api/feedback/all");
       if (response.data.success) {
         setFeedbacks(response.data.feedbacks);
       }
@@ -172,7 +176,7 @@ const StaffDashboard = () => {
 
   const fetchAppointments = async () => {
     try {
-      const response = await api.get("/appointment");
+      const response = await api.get("/api/appointments/all");
       if (response.data.success) {
         setAppointments(response.data.appointments);
       }

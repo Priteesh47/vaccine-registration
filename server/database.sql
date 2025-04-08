@@ -14,6 +14,28 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Create user_profiles table
+CREATE TABLE IF NOT EXISTS user_profiles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL UNIQUE,
+    profile_picture VARCHAR(255),
+    phone_number VARCHAR(20),
+    address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    date_of_birth DATE,
+    gender ENUM('Male', 'Female', 'Other'),
+    blood_group VARCHAR(10),
+    emergency_contact_name VARCHAR(255),
+    emergency_contact_phone VARCHAR(20),
+    medical_conditions TEXT,
+    allergies TEXT,
+    preferred_language VARCHAR(50),
+    notification_preferences JSON,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Create vaccines table
 CREATE TABLE IF NOT EXISTS vaccines (
     id INT AUTO_INCREMENT PRIMARY KEY,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import api from '../config/api';
 
 const UserProfile = () => {
     const navigate = useNavigate();
@@ -26,7 +27,7 @@ const UserProfile = () => {
                 return;
             }
 
-            const response = await axios.get('http://localhost:5000/api/profile', {
+            const response = await axios.get(api.profile, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -66,7 +67,7 @@ const UserProfile = () => {
             }
 
             const token = localStorage.getItem('token');
-            const response = await axios.put('http://localhost:5000/api/profile', {
+            const response = await axios.put(api.profile, {
                 name: profile.name,
                 email: profile.email,
                 currentPassword: profile.currentPassword,
