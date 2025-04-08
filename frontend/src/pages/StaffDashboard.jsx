@@ -3,15 +3,42 @@ import { useNavigate } from "react-router-dom";
 import api from "../config/axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { vaccines as defaultVaccines } from '../assets/assets';
-import { Doughnut, Line, Bar } from 'react-chartjs-2';
+import { vaccines as defaultVaccines } from "../assets/assets";
+
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+import { Doughnut, Line, Bar } from "react-chartjs-2";
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState('dashboard');
-  const [activeTab, setActiveTab] = useState('appointments');
+  const [activeSection, setActiveSection] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("appointments");
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalVaccines: 0,
@@ -20,7 +47,7 @@ const StaffDashboard = () => {
     totalAppointments: 0,
     completedAppointments: 0,
     upcomingAppointments: 0,
-    recentAppointments: []
+    recentAppointments: [],
   });
 
   // Add missing state variables
@@ -39,7 +66,7 @@ const StaffDashboard = () => {
     description: "",
     dosage: "",
     age_group: "",
-    effectiveness: ""
+    effectiveness: "",
   });
   const [centerForm, setCenterForm] = useState({
     name: "",
@@ -47,7 +74,7 @@ const StaffDashboard = () => {
     city: "",
     state: "",
     phone: "",
-    email: ""
+    email: "",
   });
   const [previewImage, setPreviewImage] = useState(null);
   const [showProfileForm, setShowProfileForm] = useState(false);
@@ -56,7 +83,7 @@ const StaffDashboard = () => {
     email: "",
     currentPassword: "",
     newPassword: "",
-    confirmPassword: ""
+    confirmPassword: "",
   });
 
   useEffect(() => {
@@ -158,7 +185,7 @@ const StaffDashboard = () => {
   const handleUserStatusChange = async (userId, newStatus) => {
     try {
       const response = await api.put(`/users/${userId}/status`, {
-        status: newStatus
+        status: newStatus,
       });
       if (response.data.success) {
         toast.success("User status updated successfully");
@@ -182,9 +209,9 @@ const StaffDashboard = () => {
         sideEffects: vaccineForm.effectiveness,
         stockAvailable: 100, // Default value
         price: 0, // Default value
-        daysUntilNextDose: 0 // Default value
+        daysUntilNextDose: 0, // Default value
       });
-      
+
       if (response.data) {
         toast.success("Vaccine added successfully");
         setShowVaccineForm(false);
@@ -194,7 +221,7 @@ const StaffDashboard = () => {
           description: "",
           dosage: "",
           age_group: "",
-          effectiveness: ""
+          effectiveness: "",
         });
         fetchVaccines();
       }
@@ -217,7 +244,7 @@ const StaffDashboard = () => {
           city: "",
           state: "",
           phone: "",
-          email: ""
+          email: "",
         });
         fetchCenters();
       }
@@ -238,7 +265,7 @@ const StaffDashboard = () => {
           email: "",
           currentPassword: "",
           newPassword: "",
-          confirmPassword: ""
+          confirmPassword: "",
         });
       }
     } catch (error) {
@@ -249,25 +276,25 @@ const StaffDashboard = () => {
 
   const handleVaccineChange = (e) => {
     const { name, value } = e.target;
-    setVaccineForm(prev => ({
+    setVaccineForm((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleCenterChange = (e) => {
     const { name, value } = e.target;
-    setCenterForm(prev => ({
+    setCenterForm((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
-    setProfileForm(prev => ({
+    setProfileForm((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -278,7 +305,7 @@ const StaffDashboard = () => {
       email: userData?.email || "",
       currentPassword: "",
       newPassword: "",
-      confirmPassword: ""
+      confirmPassword: "",
     });
   };
 
@@ -286,21 +313,21 @@ const StaffDashboard = () => {
     const file = e.target.files[0];
     if (file) {
       // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please upload an image file');
-        return;
-      }
-      
-      // Validate file size (e.g., max 5MB)
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      if (file.size > maxSize) {
-        toast.error('Image size should be less than 5MB');
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please upload an image file");
         return;
       }
 
-      setVaccineForm(prev => ({
+      // Validate file size (e.g., max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        toast.error("Image size should be less than 5MB");
+        return;
+      }
+
+      setVaccineForm((prev) => ({
         ...prev,
-        image: file
+        image: file,
       }));
 
       // Preview image
@@ -324,9 +351,12 @@ const StaffDashboard = () => {
     });
   };
 
-  const filteredAppointments = selectedStatus === "all"
-    ? appointments
-    : appointments.filter((appointment) => appointment.status === selectedStatus);
+  const filteredAppointments =
+    selectedStatus === "all"
+      ? appointments
+      : appointments.filter(
+          (appointment) => appointment.status === selectedStatus
+        );
 
   const handleDeleteCenter = async (centerId) => {
     try {
@@ -375,18 +405,20 @@ const StaffDashboard = () => {
             {/* Dashboard */}
             <button
               onClick={() => {
-                setActiveSection('dashboard');
+                setActiveSection("dashboard");
                 setActiveTab("appointments");
               }}
               className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full ${
-                activeSection === 'dashboard' 
-                  ? 'bg-blue-50 text-blue-600' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                activeSection === "dashboard"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               }`}
             >
               <svg
                 className={`mr-3 h-6 w-6 ${
-                  activeSection === 'dashboard' ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'
+                  activeSection === "dashboard"
+                    ? "text-blue-600"
+                    : "text-gray-400 group-hover:text-gray-500"
                 }`}
                 fill="none"
                 stroke="currentColor"
@@ -405,18 +437,20 @@ const StaffDashboard = () => {
             {/* User Management */}
             <button
               onClick={() => {
-                setActiveSection('users');
+                setActiveSection("users");
                 setActiveTab("users");
               }}
               className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full ${
-                activeSection === 'users' 
-                  ? 'bg-blue-50 text-blue-600' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                activeSection === "users"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               }`}
             >
               <svg
                 className={`mr-3 h-6 w-6 ${
-                  activeSection === 'users' ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'
+                  activeSection === "users"
+                    ? "text-blue-600"
+                    : "text-gray-400 group-hover:text-gray-500"
                 }`}
                 fill="none"
                 stroke="currentColor"
@@ -435,18 +469,20 @@ const StaffDashboard = () => {
             {/* Vaccine Management */}
             <button
               onClick={() => {
-                setActiveSection('vaccines');
+                setActiveSection("vaccines");
                 setActiveTab("vaccines");
               }}
               className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full ${
-                activeSection === 'vaccines' 
-                  ? 'bg-blue-50 text-blue-600' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                activeSection === "vaccines"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               }`}
             >
               <svg
                 className={`mr-3 h-6 w-6 ${
-                  activeSection === 'vaccines' ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'
+                  activeSection === "vaccines"
+                    ? "text-blue-600"
+                    : "text-gray-400 group-hover:text-gray-500"
                 }`}
                 fill="none"
                 stroke="currentColor"
@@ -465,18 +501,20 @@ const StaffDashboard = () => {
             {/* Centers Management */}
             <button
               onClick={() => {
-                setActiveSection('centers');
+                setActiveSection("centers");
                 setActiveTab("centers");
               }}
               className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full ${
-                activeSection === 'centers' 
-                  ? 'bg-blue-50 text-blue-600' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                activeSection === "centers"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               }`}
             >
               <svg
                 className={`mr-3 h-6 w-6 ${
-                  activeSection === 'centers' ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'
+                  activeSection === "centers"
+                    ? "text-blue-600"
+                    : "text-gray-400 group-hover:text-gray-500"
                 }`}
                 fill="none"
                 stroke="currentColor"
@@ -495,18 +533,20 @@ const StaffDashboard = () => {
             {/* Feedback Management */}
             <button
               onClick={() => {
-                setActiveSection('feedback');
+                setActiveSection("feedback");
                 setActiveTab("feedback");
               }}
               className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full ${
-                activeSection === 'feedback' 
-                  ? 'bg-blue-50 text-blue-600' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                activeSection === "feedback"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               }`}
             >
               <svg
                 className={`mr-3 h-6 w-6 ${
-                  activeSection === 'feedback' ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'
+                  activeSection === "feedback"
+                    ? "text-blue-600"
+                    : "text-gray-400 group-hover:text-gray-500"
                 }`}
                 fill="none"
                 stroke="currentColor"
@@ -525,18 +565,20 @@ const StaffDashboard = () => {
             {/* Profile Button */}
             <button
               onClick={() => {
-                setActiveSection('profile');
+                setActiveSection("profile");
                 handleProfileClick();
               }}
               className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full ${
-                activeSection === 'profile' 
-                  ? 'bg-blue-50 text-blue-600' 
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                activeSection === "profile"
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               }`}
             >
               <svg
                 className={`mr-3 h-6 w-6 ${
-                  activeSection === 'profile' ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-500'
+                  activeSection === "profile"
+                    ? "text-blue-600"
+                    : "text-gray-400 group-hover:text-gray-500"
                 }`}
                 fill="none"
                 stroke="currentColor"
@@ -577,8 +619,12 @@ const StaffDashboard = () => {
             <div className="space-y-8">
               {/* Welcome Section */}
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Welcome, {userData?.name}!</h1>
-                <p className="mt-2 text-gray-600">Here's an overview of your vaccination center</p>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Welcome, {userData?.name}!
+                </h1>
+                <p className="mt-2 text-gray-600">
+                  Here's an overview of your vaccination center
+                </p>
               </div>
 
               {/* Stats Grid */}
@@ -587,51 +633,72 @@ const StaffDashboard = () => {
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Total Appointments</p>
-                      <p className="mt-2 text-3xl font-semibold text-gray-900">{stats.totalAppointments}</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        Total Appointments
+                      </p>
+                      <p className="mt-2 text-3xl font-semibold text-gray-900">
+                        {stats.totalAppointments}
+                      </p>
                     </div>
                     <div className="bg-blue-100 rounded-full p-3">
-                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      <svg
+                        className="w-6 h-6 text-blue-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
                       </svg>
                     </div>
                   </div>
                   <div className="h-40">
                     <Doughnut
                       data={{
-                        labels: ['Completed', 'Upcoming', 'Cancelled'],
-                        datasets: [{
-                          data: [
-                            Math.max(1, stats.completedAppointments || 0),
-                            Math.max(1, stats.upcomingAppointments || 0),
-                            Math.max(1, (stats.totalAppointments - (stats.completedAppointments || 0) - (stats.upcomingAppointments || 0)) || 0)
-                          ],
-                          backgroundColor: [
-                            '#10B981',  // Green
-                            '#3B82F6',  // Blue
-                            '#EF4444'   // Red
-                          ],
-                          borderColor: '#ffffff',
-                          borderWidth: 2
-                        }]
+                        labels: ["Completed", "Upcoming", "Cancelled"],
+                        datasets: [
+                          {
+                            data: [
+                              Math.max(1, stats.completedAppointments || 0),
+                              Math.max(1, stats.upcomingAppointments || 0),
+                              Math.max(
+                                1,
+                                stats.totalAppointments -
+                                  (stats.completedAppointments || 0) -
+                                  (stats.upcomingAppointments || 0) || 0
+                              ),
+                            ],
+                            backgroundColor: [
+                              "#10B981", // Green
+                              "#3B82F6", // Blue
+                              "#EF4444", // Red
+                            ],
+                            borderColor: "#ffffff",
+                            borderWidth: 2,
+                          },
+                        ],
                       }}
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
-                        cutout: '70%',
+                        cutout: "70%",
                         plugins: {
                           legend: {
                             display: true,
-                            position: 'bottom',
+                            position: "bottom",
                             labels: {
                               boxWidth: 12,
                               padding: 15,
                               font: {
-                                size: 12
-                              }
-                            }
-                          }
-                        }
+                                size: 12,
+                              },
+                            },
+                          },
+                        },
                       }}
                     />
                   </div>
@@ -641,51 +708,67 @@ const StaffDashboard = () => {
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Completed Vaccinations</p>
-                      <p className="mt-2 text-3xl font-semibold text-gray-900">{stats.completedAppointments}</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        Completed Vaccinations
+                      </p>
+                      <p className="mt-2 text-3xl font-semibold text-gray-900">
+                        {stats.completedAppointments}
+                      </p>
                     </div>
                     <div className="bg-green-100 rounded-full p-3">
-                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-6 h-6 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </div>
                   </div>
                   <div className="h-40">
                     <Line
                       data={{
-                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                        datasets: [{
-                          data: [12, 19, 3, 5, 2, 3],
-                          borderColor: '#10B981',
-                          tension: 0.4,
-                          fill: true,
-                          backgroundColor: 'rgba(16, 185, 129, 0.1)'
-                        }]
+                        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+                        datasets: [
+                          {
+                            data: [12, 19, 3, 5, 2, 3],
+                            borderColor: "#10B981",
+                            tension: 0.4,
+                            fill: true,
+                            backgroundColor: "rgba(16, 185, 129, 0.1)",
+                          },
+                        ],
                       }}
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
                           legend: {
-                            display: false
-                          }
+                            display: false,
+                          },
                         },
                         scales: {
                           y: {
                             beginAtZero: true,
                             grid: {
-                              display: false
+                              display: false,
                             },
                             ticks: {
-                              display: false
-                            }
+                              display: false,
+                            },
                           },
                           x: {
                             grid: {
-                              display: false
-                            }
-                          }
-                        }
+                              display: false,
+                            },
+                          },
+                        },
                       }}
                     />
                   </div>
@@ -695,58 +778,74 @@ const StaffDashboard = () => {
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Upcoming Appointments</p>
-                      <p className="mt-2 text-3xl font-semibold text-gray-900">{stats.upcomingAppointments}</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        Upcoming Appointments
+                      </p>
+                      <p className="mt-2 text-3xl font-semibold text-gray-900">
+                        {stats.upcomingAppointments}
+                      </p>
                     </div>
                     <div className="bg-yellow-100 rounded-full p-3">
-                      <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-6 h-6 text-yellow-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </div>
                   </div>
                   <div className="h-40">
                     <Bar
                       data={{
-                        labels: ['This Week', 'Next Week', 'Later'],
-                        datasets: [{
-                          data: [
-                            Math.max(1, stats.upcomingAppointments * 0.4),
-                            Math.max(1, stats.upcomingAppointments * 0.3),
-                            Math.max(1, stats.upcomingAppointments * 0.3)
-                          ],
-                          backgroundColor: [
-                            'rgba(59, 130, 246, 0.8)',  // Blue
-                            'rgba(96, 165, 250, 0.8)',  // Lighter Blue
-                            'rgba(147, 197, 253, 0.8)'  // Lightest Blue
-                          ],
-                          borderRadius: 8,
-                          borderWidth: 0
-                        }]
+                        labels: ["This Week", "Next Week", "Later"],
+                        datasets: [
+                          {
+                            data: [
+                              Math.max(1, stats.upcomingAppointments * 0.4),
+                              Math.max(1, stats.upcomingAppointments * 0.3),
+                              Math.max(1, stats.upcomingAppointments * 0.3),
+                            ],
+                            backgroundColor: [
+                              "rgba(59, 130, 246, 0.8)", // Blue
+                              "rgba(96, 165, 250, 0.8)", // Lighter Blue
+                              "rgba(147, 197, 253, 0.8)", // Lightest Blue
+                            ],
+                            borderRadius: 8,
+                            borderWidth: 0,
+                          },
+                        ],
                       }}
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
                           legend: {
-                            display: false
-                          }
+                            display: false,
+                          },
                         },
                         scales: {
                           y: {
                             beginAtZero: true,
                             grid: {
-                              display: false
+                              display: false,
                             },
                             ticks: {
-                              display: false
-                            }
+                              display: false,
+                            },
                           },
                           x: {
                             grid: {
-                              display: false
-                            }
-                          }
-                        }
+                              display: false,
+                            },
+                          },
+                        },
                       }}
                     />
                   </div>
@@ -755,22 +854,36 @@ const StaffDashboard = () => {
 
               {/* Recent Activity */}
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  Recent Activity
+                </h2>
                 <div className="space-y-4">
                   {stats.recentAppointments?.slice(0, 5).map((appointment) => (
-                    <div key={appointment._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div
+                      key={appointment._id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                    >
                       <div>
-                        <p className="font-medium text-gray-900">{appointment.vaccine?.name}</p>
+                        <p className="font-medium text-gray-900">
+                          {appointment.vaccine?.name}
+                        </p>
                         <p className="text-sm text-gray-600">
-                          {new Date(appointment.appointment_date).toLocaleDateString()}
+                          {new Date(
+                            appointment.appointment_date
+                          ).toLocaleDateString()}
                         </p>
                       </div>
-                      <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                        appointment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
-                        {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                      <span
+                        className={`px-3 py-1 text-sm font-semibold rounded-full ${
+                          appointment.status === "completed"
+                            ? "bg-green-100 text-green-800"
+                            : appointment.status === "cancelled"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {appointment.status.charAt(0).toUpperCase() +
+                          appointment.status.slice(1)}
                       </span>
                     </div>
                   ))}
@@ -782,8 +895,12 @@ const StaffDashboard = () => {
           {activeSection === "users" && (
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">User Management</h2>
-                <p className="mt-2 text-gray-600">Manage user accounts and permissions</p>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  User Management
+                </h2>
+                <p className="mt-2 text-gray-600">
+                  Manage user accounts and permissions
+                </p>
               </div>
 
               <div className="bg-white shadow overflow-hidden sm:rounded-md">
@@ -804,14 +921,19 @@ const StaffDashboard = () => {
                         </div>
                         <div className="flex items-center space-x-4">
                           <button
-                            onClick={() => handleUserStatusChange(user._id, user.status === 'active' ? 'inactive' : 'active')}
+                            onClick={() =>
+                              handleUserStatusChange(
+                                user._id,
+                                user.status === "active" ? "inactive" : "active"
+                              )
+                            }
                             className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                              user.status === 'active' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
+                              user.status === "active"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
                             }`}
                           >
-                            {user.status === 'active' ? 'Active' : 'Inactive'}
+                            {user.status === "active" ? "Active" : "Inactive"}
                           </button>
                         </div>
                       </div>
@@ -839,10 +961,15 @@ const StaffDashboard = () => {
               {showVaccineForm && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-                    <h2 className="text-xl font-semibold mb-4">Add New Vaccine</h2>
+                    <h2 className="text-xl font-semibold mb-4">
+                      Add New Vaccine
+                    </h2>
                     <form onSubmit={handleVaccineSubmit} className="space-y-4">
                       <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="name"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Vaccine Name
                         </label>
                         <input
@@ -857,7 +984,10 @@ const StaffDashboard = () => {
                       </div>
 
                       <div>
-                        <label htmlFor="manufacturer" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="manufacturer"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Manufacturer
                         </label>
                         <input
@@ -872,7 +1002,10 @@ const StaffDashboard = () => {
                       </div>
 
                       <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="description"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Description
                         </label>
                         <textarea
@@ -886,7 +1019,10 @@ const StaffDashboard = () => {
                       </div>
 
                       <div>
-                        <label htmlFor="dosage" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="dosage"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Dosage
                         </label>
                         <input
@@ -900,7 +1036,10 @@ const StaffDashboard = () => {
                       </div>
 
                       <div>
-                        <label htmlFor="age_group" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="age_group"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Age Group
                         </label>
                         <input
@@ -914,7 +1053,10 @@ const StaffDashboard = () => {
                       </div>
 
                       <div>
-                        <label htmlFor="effectiveness" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="effectiveness"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Effectiveness
                         </label>
                         <input
@@ -938,7 +1080,7 @@ const StaffDashboard = () => {
                               description: "",
                               dosage: "",
                               age_group: "",
-                              effectiveness: ""
+                              effectiveness: "",
                             });
                           }}
                           className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -992,7 +1134,9 @@ const StaffDashboard = () => {
               <div className="bg-white shadow rounded-lg p-6">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Center Management</h2>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      Center Management
+                    </h2>
                     <p className="mt-1 text-sm text-gray-500">
                       Manage vaccination centers and their details
                     </p>
@@ -1011,7 +1155,9 @@ const StaffDashboard = () => {
                   </div>
                 ) : centers.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">No centers found. Add a new center to get started.</p>
+                    <p className="text-gray-500">
+                      No centers found. Add a new center to get started.
+                    </p>
                   </div>
                 ) : (
                   <div className="mt-6">
@@ -1026,15 +1172,19 @@ const StaffDashboard = () => {
                                     {center.name}
                                   </p>
                                   <p className="mt-1 text-sm text-gray-500">
-                                    {center.address}, {center.city}, {center.state}
+                                    {center.address}, {center.city},{" "}
+                                    {center.state}
                                   </p>
                                   <p className="mt-1 text-sm text-gray-500">
-                                    Phone: {center.phone} | Email: {center.email}
+                                    Phone: {center.phone} | Email:{" "}
+                                    {center.email}
                                   </p>
                                 </div>
                                 <div className="ml-4 flex-shrink-0">
                                   <button
-                                    onClick={() => handleDeleteCenter(center._id)}
+                                    onClick={() =>
+                                      handleDeleteCenter(center._id)
+                                    }
                                     className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                                   >
                                     Delete
@@ -1055,8 +1205,12 @@ const StaffDashboard = () => {
           {activeSection === "feedback" && (
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Feedback Management</h2>
-                <p className="mt-2 text-gray-600">View and manage user feedback</p>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Feedback Management
+                </h2>
+                <p className="mt-2 text-gray-600">
+                  View and manage user feedback
+                </p>
               </div>
 
               <div className="bg-white shadow overflow-hidden sm:rounded-md">
@@ -1066,7 +1220,7 @@ const StaffDashboard = () => {
                       <div className="flex items-start">
                         <div>
                           <h3 className="text-lg font-medium text-gray-900">
-                            {feedback.user?.name || 'Anonymous User'}
+                            {feedback.user?.name || "Anonymous User"}
                           </h3>
                           <p className="mt-1 text-sm text-gray-500">
                             Rating: {feedback.rating}/5
@@ -1075,7 +1229,8 @@ const StaffDashboard = () => {
                             {feedback.comment}
                           </p>
                           <p className="text-sm text-gray-500">
-                            Date: {new Date(feedback.createdAt).toLocaleDateString()}
+                            Date:{" "}
+                            {new Date(feedback.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
@@ -1089,13 +1244,19 @@ const StaffDashboard = () => {
           {activeSection === "profile" && (
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Profile Settings</h2>
-                <p className="mt-2 text-gray-600">Manage your account information</p>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Profile Settings
+                </h2>
+                <p className="mt-2 text-gray-600">
+                  Manage your account information
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-gray-50 p-6 rounded-lg">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    Personal Information
+                  </h3>
                   <div className="space-y-4">
                     <div>
                       <p className="text-sm font-medium text-gray-500">Name</p>
@@ -1113,10 +1274,15 @@ const StaffDashboard = () => {
                 </div>
 
                 <div className="bg-gray-50 p-6 rounded-lg">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Update Profile</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    Update Profile
+                  </h3>
                   <form onSubmit={handleProfileUpdate} className="space-y-4">
                     <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                      <label
+                        htmlFor="name"
+                        className="block text-sm font-medium text-gray-700"
+                      >
                         Name
                       </label>
                       <input
@@ -1130,7 +1296,10 @@ const StaffDashboard = () => {
                     </div>
 
                     <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                      <label
+                        htmlFor="email"
+                        className="block text-sm font-medium text-gray-700"
+                      >
                         Email
                       </label>
                       <input
@@ -1144,7 +1313,10 @@ const StaffDashboard = () => {
                     </div>
 
                     <div>
-                      <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700">
+                      <label
+                        htmlFor="currentPassword"
+                        className="block text-sm font-medium text-gray-700"
+                      >
                         Current Password
                       </label>
                       <input
@@ -1158,7 +1330,10 @@ const StaffDashboard = () => {
                     </div>
 
                     <div>
-                      <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
+                      <label
+                        htmlFor="newPassword"
+                        className="block text-sm font-medium text-gray-700"
+                      >
                         New Password
                       </label>
                       <input
@@ -1172,7 +1347,10 @@ const StaffDashboard = () => {
                     </div>
 
                     <div>
-                      <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                      <label
+                        htmlFor="confirmPassword"
+                        className="block text-sm font-medium text-gray-700"
+                      >
                         Confirm New Password
                       </label>
                       <input

@@ -26,6 +26,17 @@ import contact from "./contact.jpg";
 import faq from "./faq.jpg";
 import login from "./login.jpg";
 
+//centers
+
+import cen1 from "./cen1.jpg";
+import cen2 from "./cen2.jpg";
+import cen3 from "./cen3.jpg";
+import cen4 from "./cen4.jpg";
+import cen5 from "./cen5.jpg";
+import cen6 from "./cen6.jpg";
+import cen7 from "./cen7.jpg";
+import { useLinkClickHandler } from "react-router-dom";
+
 export const assets = {
   vac1,
   vac2,
@@ -54,6 +65,13 @@ export const assets = {
   contact,
   faq,
   login,
+  cen1,
+  cen2,
+  cen3,
+  cen4,
+  cen5,
+  cen6,
+  cen7,
 };
 
 export const vaccines = [
@@ -216,6 +234,57 @@ export const vaccines = [
     features: "Protects infants from severe diarrhea.",
     dosage: "Two or three doses.",
     speciality: "Rotavirus",
+  },
+];
+
+export const Centers = [
+  {
+    name: "National Vaccination Centers",
+    address: "Nottingham UK",
+    image: cen1,
+    email: "NationalHospital@gmail.com",
+  },
+
+  {
+    name: "Birnigham Hospital",
+    address: "Birmingham UK",
+    image: cen2,
+    email: "Birmingham@gmail.com",
+  },
+
+  {
+    name: "Mediciti Hospital",
+    address: "Nakkhu Kathmandu",
+    image: cen3,
+    email: "Mediciti@gmail.com",
+  },
+
+  {
+    name: "Amsterdam Vaccine Provider",
+    address: "Amsterdam Netherlands",
+    image: cen4,
+    email: "amsternvacc@gmail.com",
+  },
+
+  {
+    name: "Norvic Hospital",
+    address: "Thapathali Kathmandu",
+    image: cen5,
+    email: "NorvicNep@gmail.com",
+  },
+
+  {
+    name: "Civil Service Hospital",
+    address: "New Baneshwore kathmandu",
+    image: cen6,
+    email: "civilserv@gmail.com",
+  },
+
+  {
+    name: "BnB Hospital",
+    address: "Gwarko, Lalitpur",
+    image: cen7,
+    email: "bnbhosp@gmail.com",
   },
 ];
 

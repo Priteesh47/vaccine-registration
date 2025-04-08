@@ -7,19 +7,21 @@ import { vaccines as defaultVaccines } from "../assets/assets";
 import {
   Chart as ChartJS,
   CategoryScale,
+  BarElement,
   LinearScale,
   PointElement,
   LineElement,
   Title,
   Tooltip,
   Legend,
-  ArcElement
-} from 'chart.js';
+  ArcElement,
+} from "chart.js";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 
 // Register ChartJS components
 ChartJS.register(
   CategoryScale,
+  BarElement,
   LinearScale,
   PointElement,
   LineElement,
@@ -284,7 +286,8 @@ const UserDashboard = () => {
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error(
-        error.response?.data?.message || "An error occurred while updating profile"
+        error.response?.data?.message ||
+          "An error occurred while updating profile"
       );
     }
   };
@@ -493,8 +496,12 @@ const UserDashboard = () => {
             <div className="space-y-8">
               {/* Welcome Section */}
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Welcome, {userData?.name}!</h1>
-                <p className="mt-2 text-gray-600">Here's an overview of your vaccination journey</p>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Welcome, {userData?.name}!
+                </h1>
+                <p className="mt-2 text-gray-600">
+                  Here's an overview of your vaccination journey
+                </p>
               </div>
 
               {/* Stats Grid */}
@@ -503,51 +510,72 @@ const UserDashboard = () => {
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Total Appointments</p>
-                      <p className="mt-2 text-3xl font-semibold text-gray-900">{stats.totalAppointments}</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        Total Appointments
+                      </p>
+                      <p className="mt-2 text-3xl font-semibold text-gray-900">
+                        {stats.totalAppointments}
+                      </p>
                     </div>
                     <div className="bg-blue-100 rounded-full p-3">
-                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      <svg
+                        className="w-6 h-6 text-blue-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
                       </svg>
                     </div>
                   </div>
                   <div className="h-40">
                     <Doughnut
                       data={{
-                        labels: ['Completed', 'Upcoming', 'Cancelled'],
-                        datasets: [{
-                          data: [
-                            Math.max(1, stats.completedAppointments || 0),
-                            Math.max(1, stats.upcomingAppointments || 0),
-                            Math.max(1, (stats.totalAppointments - (stats.completedAppointments || 0) - (stats.upcomingAppointments || 0)) || 0)
-                          ],
-                          backgroundColor: [
-                            '#10B981',  // Green
-                            '#3B82F6',  // Blue
-                            '#EF4444'   // Red
-                          ],
-                          borderColor: '#ffffff',
-                          borderWidth: 2
-                        }]
+                        labels: ["Completed", "Upcoming", "Cancelled"],
+                        datasets: [
+                          {
+                            data: [
+                              Math.max(1, stats.completedAppointments || 0),
+                              Math.max(1, stats.upcomingAppointments || 0),
+                              Math.max(
+                                1,
+                                stats.totalAppointments -
+                                  (stats.completedAppointments || 0) -
+                                  (stats.upcomingAppointments || 0) || 0
+                              ),
+                            ],
+                            backgroundColor: [
+                              "#10B981", // Green
+                              "#3B82F6", // Blue
+                              "#EF4444", // Red
+                            ],
+                            borderColor: "#ffffff",
+                            borderWidth: 2,
+                          },
+                        ],
                       }}
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
-                        cutout: '70%',
+                        cutout: "70%",
                         plugins: {
                           legend: {
                             display: true,
-                            position: 'bottom',
+                            position: "bottom",
                             labels: {
                               boxWidth: 12,
                               padding: 15,
                               font: {
-                                size: 12
-                              }
-                            }
-                          }
-                        }
+                                size: 12,
+                              },
+                            },
+                          },
+                        },
                       }}
                     />
                   </div>
@@ -557,51 +585,67 @@ const UserDashboard = () => {
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Completed Vaccinations</p>
-                      <p className="mt-2 text-3xl font-semibold text-gray-900">{stats.completedAppointments}</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        Completed Vaccinations
+                      </p>
+                      <p className="mt-2 text-3xl font-semibold text-gray-900">
+                        {stats.completedAppointments}
+                      </p>
                     </div>
                     <div className="bg-green-100 rounded-full p-3">
-                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-6 h-6 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </div>
                   </div>
                   <div className="h-40">
                     <Line
                       data={{
-                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                        datasets: [{
-                          data: [12, 19, 3, 5, 2, 3],
-                          borderColor: '#10B981',
-                          tension: 0.4,
-                          fill: true,
-                          backgroundColor: 'rgba(16, 185, 129, 0.1)'
-                        }]
+                        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+                        datasets: [
+                          {
+                            data: [12, 19, 3, 5, 2, 3],
+                            borderColor: "#10B981",
+                            tension: 0.4,
+                            fill: true,
+                            backgroundColor: "rgba(16, 185, 129, 0.1)",
+                          },
+                        ],
                       }}
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
                           legend: {
-                            display: false
-                          }
+                            display: false,
+                          },
                         },
                         scales: {
                           y: {
                             beginAtZero: true,
                             grid: {
-                              display: false
+                              display: false,
                             },
                             ticks: {
-                              display: false
-                            }
+                              display: false,
+                            },
                           },
                           x: {
                             grid: {
-                              display: false
-                            }
-                          }
-                        }
+                              display: false,
+                            },
+                          },
+                        },
                       }}
                     />
                   </div>
@@ -611,58 +655,74 @@ const UserDashboard = () => {
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Upcoming Appointments</p>
-                      <p className="mt-2 text-3xl font-semibold text-gray-900">{stats.upcomingAppointments}</p>
+                      <p className="text-sm font-medium text-gray-600">
+                        Upcoming Appointments
+                      </p>
+                      <p className="mt-2 text-3xl font-semibold text-gray-900">
+                        {stats.upcomingAppointments}
+                      </p>
                     </div>
                     <div className="bg-yellow-100 rounded-full p-3">
-                      <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-6 h-6 text-yellow-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </div>
                   </div>
                   <div className="h-40">
                     <Bar
                       data={{
-                        labels: ['This Week', 'Next Week', 'Later'],
-                        datasets: [{
-                          data: [
-                            Math.max(1, stats.upcomingAppointments * 0.4),
-                            Math.max(1, stats.upcomingAppointments * 0.3),
-                            Math.max(1, stats.upcomingAppointments * 0.3)
-                          ],
-                          backgroundColor: [
-                            'rgba(59, 130, 246, 0.8)',  // Blue
-                            'rgba(96, 165, 250, 0.8)',  // Lighter Blue
-                            'rgba(147, 197, 253, 0.8)'  // Lightest Blue
-                          ],
-                          borderRadius: 8,
-                          borderWidth: 0
-                        }]
+                        labels: ["This Week", "Next Week", "Later"],
+                        datasets: [
+                          {
+                            data: [
+                              Math.max(1, stats.upcomingAppointments * 0.4),
+                              Math.max(1, stats.upcomingAppointments * 0.3),
+                              Math.max(1, stats.upcomingAppointments * 0.3),
+                            ],
+                            backgroundColor: [
+                              "rgba(59, 130, 246, 0.8)", // Blue
+                              "rgba(96, 165, 250, 0.8)", // Lighter Blue
+                              "rgba(147, 197, 253, 0.8)", // Lightest Blue
+                            ],
+                            borderRadius: 8,
+                            borderWidth: 0,
+                          },
+                        ],
                       }}
                       options={{
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
                           legend: {
-                            display: false
-                          }
+                            display: false,
+                          },
                         },
                         scales: {
                           y: {
                             beginAtZero: true,
                             grid: {
-                              display: false
+                              display: false,
                             },
                             ticks: {
-                              display: false
-                            }
+                              display: false,
+                            },
                           },
                           x: {
                             grid: {
-                              display: false
-                            }
-                          }
-                        }
+                              display: false,
+                            },
+                          },
+                        },
                       }}
                     />
                   </div>
@@ -671,22 +731,36 @@ const UserDashboard = () => {
 
               {/* Recent Activity */}
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  Recent Activity
+                </h2>
                 <div className="space-y-4">
                   {stats.recentAppointments?.slice(0, 5).map((appointment) => (
-                    <div key={appointment._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div
+                      key={appointment._id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                    >
                       <div>
-                        <p className="font-medium text-gray-900">{appointment.vaccine?.name}</p>
+                        <p className="font-medium text-gray-900">
+                          {appointment.vaccine?.name}
+                        </p>
                         <p className="text-sm text-gray-600">
-                          {new Date(appointment.appointment_date).toLocaleDateString()}
+                          {new Date(
+                            appointment.appointment_date
+                          ).toLocaleDateString()}
                         </p>
                       </div>
-                      <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                        appointment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        appointment.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
-                        {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                      <span
+                        className={`px-3 py-1 text-sm font-semibold rounded-full ${
+                          appointment.status === "completed"
+                            ? "bg-green-100 text-green-800"
+                            : appointment.status === "cancelled"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {appointment.status.charAt(0).toUpperCase() +
+                          appointment.status.slice(1)}
                       </span>
                     </div>
                   ))}
@@ -1028,8 +1102,12 @@ const UserDashboard = () => {
           {activeSection === "profile" && (
             <div className="max-w-4xl mx-auto">
               <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
-                <p className="mt-2 text-gray-600">Manage your account information and preferences</p>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  Profile Settings
+                </h1>
+                <p className="mt-2 text-gray-600">
+                  Manage your account information and preferences
+                </p>
               </div>
 
               <div className="bg-white rounded-lg shadow-md p-6">
@@ -1037,24 +1115,38 @@ const UserDashboard = () => {
                   {/* Profile Information */}
                   <div className="space-y-6">
                     <div>
-                      <h2 className="text-xl font-semibold text-gray-900 mb-4">Personal Information</h2>
+                      <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                        Personal Information
+                      </h2>
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Name
+                          </label>
                           <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                            <p className="text-gray-900">{userData?.name || 'Not set'}</p>
+                            <p className="text-gray-900">
+                              {userData?.name || "Not set"}
+                            </p>
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Email
+                          </label>
                           <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                            <p className="text-gray-900">{userData?.email || 'Not set'}</p>
+                            <p className="text-gray-900">
+                              {userData?.email || "Not set"}
+                            </p>
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Role
+                          </label>
                           <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                            <p className="text-gray-900 capitalize">{userData?.role || 'Not set'}</p>
+                            <p className="text-gray-900 capitalize">
+                              {userData?.role || "Not set"}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -1063,10 +1155,15 @@ const UserDashboard = () => {
 
                   {/* Update Profile Form */}
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Update Profile</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                      Update Profile
+                    </h2>
                     <form onSubmit={handleProfileUpdate} className="space-y-4">
                       <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                          htmlFor="name"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
                           Update Name
                         </label>
                         <input
@@ -1081,7 +1178,10 @@ const UserDashboard = () => {
                       </div>
 
                       <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                          htmlFor="email"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
                           Update Email
                         </label>
                         <input
@@ -1096,7 +1196,10 @@ const UserDashboard = () => {
                       </div>
 
                       <div>
-                        <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                          htmlFor="currentPassword"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
                           Current Password
                         </label>
                         <input
@@ -1111,7 +1214,10 @@ const UserDashboard = () => {
                       </div>
 
                       <div>
-                        <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                          htmlFor="newPassword"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
                           New Password
                         </label>
                         <input
@@ -1126,7 +1232,10 @@ const UserDashboard = () => {
                       </div>
 
                       <div>
-                        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                          htmlFor="confirmPassword"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
                           Confirm New Password
                         </label>
                         <input

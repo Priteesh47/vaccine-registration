@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import api from "../config/axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { Chart as ChartJS } from "chart.js/auto";
-import { Bar, Doughnut } from "react-chartjs-2";
 
 const Center = () => {
   const [centers, setCenters] = useState([]);
